@@ -1,3 +1,5 @@
+import { MODEL_CATALOG } from "../lib/models.js";
+
 const state = {
   mode: "article",
   article: null,
@@ -39,6 +41,16 @@ function updateSettingsUi() {
   elements.keyStatus.classList.toggle("ready", state.settings.hasApiKey);
   elements.clearKey.disabled = !state.settings.hasApiKey;
   elements.settings.hidden = state.settings.hasApiKey;
+}
+
+function populateModelOptions() {
+  const options = MODEL_CATALOG.map(({ id, label }) => {
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = label;
+    return option;
+  });
+  elements.model.replaceChildren(...options);
 }
 
 async function activeTab() {
@@ -273,6 +285,7 @@ elements.analyze.addEventListener("click", analyze);
 
 async function initialize() {
   try {
+    populateModelOptions();
     state.settings = await sendMessage({ type: "GET_SETTINGS" });
     updateSettingsUi();
   } catch (error) {

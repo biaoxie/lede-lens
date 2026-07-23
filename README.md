@@ -23,7 +23,7 @@ LedeLens is an early proof of concept. The first release:
 - runs as a Chrome Manifest V3 side panel;
 - analyzes a full article or selected text;
 - calls the OpenAI Responses API directly from the extension service worker;
-- offers GPT-5.6 Sol, Terra, and Luna model choices;
+- offers GPT-5.6 Sol, Terra, and Luna plus GPT-5.4 model choices;
 - stores the OpenAI API key in `chrome.storage.session`, which Chrome clears when the browser session ends;
 - validates every model result locally against JSON Schema before rendering it.
 

@@ -1,8 +1,7 @@
 import { validateAnalysisResult } from "./lib/validator.js";
+import { ALLOWED_MODELS, DEFAULT_MODEL } from "./lib/models.js";
 
 const OPENAI_ENDPOINT = "https://api.openai.com/v1/responses";
-const DEFAULT_MODEL = "gpt-5.6-terra";
-const ALLOWED_MODELS = new Set(["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"]);
 
 let assetsPromise;
 

@@ -28,7 +28,8 @@ If you received the source another way, open its root folder—the folder contai
 3. Choose an OpenAI model:
    - **GPT-5.6 Sol** for the strongest analysis;
    - **GPT-5.6 Terra** for a balance of quality and cost;
-   - **GPT-5.6 Luna** for lower latency and high-volume use.
+   - **GPT-5.6 Luna** for lower latency and high-volume use;
+   - **GPT-5.4** when you need compatibility with that model generation.
 4. Paste an OpenAI API key.
 5. Select **Save settings**.
 
