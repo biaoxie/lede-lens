@@ -812,6 +812,9 @@ async function analyze() {
   state.activeAnalysis = operation;
   elements.analyze.disabled = true;
   elements.results.hidden = true;
+  state.report = null;
+  state.result = null;
+  updateDisclosure();
   setMessage("");
   startProgress();
   try {

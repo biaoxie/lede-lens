@@ -97,6 +97,13 @@ test("partial extraction and privacy copy are visible before a paid request", ()
   assert.doesNotMatch(panelMarkup, /extracted article text and metadata/);
 });
 
+test("starting a new request clears restored-report privacy copy before progress begins", () => {
+  assert.match(
+    panelSource,
+    /elements\.results\.hidden = true;\s+state\.report = null;\s+state\.result = null;\s+updateDisclosure\(\);\s+setMessage\(""\);\s+startProgress\(\);/,
+  );
+});
+
 test("interactive controls expose keyboard, status, and reduced-motion semantics", () => {
   assert.match(panelMarkup, /aria-controls="settings" aria-expanded="false"/);
   assert.match(panelMarkup, /progress-elapsed" aria-hidden="true"/);
