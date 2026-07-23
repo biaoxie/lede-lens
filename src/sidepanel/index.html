@@ -25,34 +25,50 @@
     </header>
 
     <main>
-      <section id="settings" class="panel" hidden>
+      <section id="settings" class="panel settings-panel" hidden>
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Configuration</p>
-            <h2>OpenAI</h2>
+            <p class="eyebrow">Settings</p>
+            <h2>OpenAI connection</h2>
           </div>
-          <span id="key-status" class="status-pill">Not configured</span>
+          <span id="key-status" class="status-pill disconnected">Not connected</span>
         </div>
 
         <form id="settings-form">
+          <ol class="setup-steps" aria-label="Connection setup">
+            <li>Enter key</li>
+            <li>Load models</li>
+            <li>Choose model</li>
+          </ol>
+
           <label for="api-key">API key</label>
           <input id="api-key" name="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…" />
           <p class="help">The key is stored only in Chrome's session storage and is cleared when the browser closes.</p>
 
-          <button id="load-models" class="quiet small" type="button">Load available models</button>
+          <button id="load-models" class="quiet small standalone-action" type="button">Load models</button>
 
-          <label for="model">Available model</label>
+          <label for="model">Model</label>
           <select id="model" name="model" disabled>
             <option value="">Load models from OpenAI first</option>
           </select>
-          <p id="model-status" class="help">Choose a model returned for this API key, then confirm the settings.</p>
+          <p id="model-status" class="help">Load the models available to this API key, then choose one.</p>
 
-          <div class="button-row">
-            <button id="save-settings" class="primary small" type="submit" disabled>Confirm settings</button>
-            <button id="clear-key" class="quiet small" type="button">Clear key</button>
-            <button id="clear-cache" class="quiet small" type="button">Clear saved analyses</button>
+          <div class="connection-actions">
+            <button id="save-settings" class="primary small" type="submit" disabled>Save and continue</button>
+            <button id="change-model" class="quiet small" type="button" hidden>Change model</button>
           </div>
         </form>
+
+        <section class="data-settings" aria-labelledby="data-settings-title">
+          <p class="eyebrow">Privacy and storage</p>
+          <h3 id="data-settings-title">Data on this device</h3>
+          <p id="saved-report-count" class="data-count">0 saved reports on this device</p>
+          <p class="help">Reports stay in this Chrome profile and are not synchronized. The API key lasts only for this browser session.</p>
+          <div class="destructive-actions">
+            <button id="clear-key" class="danger quiet small" type="button">Delete session API key</button>
+            <button id="clear-cache" class="danger quiet small" type="button">Delete saved reports</button>
+          </div>
+        </section>
       </section>
 
       <section id="workspace" class="panel">
@@ -74,7 +90,7 @@
         </div>
 
         <p class="data-disclosure">Analyzing sends the extracted article text and metadata to OpenAI. The page address stays local and is used only to restore saved reports. OpenAI API charges may apply.</p>
-        <button id="analyze" class="primary full" type="button">Analyze article</button>
+        <button id="analyze" class="primary full" type="button" disabled>Connect OpenAI to analyze</button>
         <div id="progress" class="progress" role="status" aria-live="polite" hidden>
           <div class="progress-heading">
             <span class="spinner" aria-hidden="true"></span>

@@ -11,6 +11,12 @@ import {
   isCurrentAnalysisOperation,
   stopAnalysisOperation,
 } from "../lib/request-lifecycle.js";
+import {
+  cacheDeletionPrompt,
+  getConnectionState,
+  getReportProvenance,
+  savedReportCountLabel,
+} from "../lib/ui-state.js";
 
 const state = {
   mode: "article",
@@ -19,6 +25,11 @@ const state = {
   settings: null,
   pageRevision: 0,
   activeAnalysis: null,
+  pageReady: false,
+  needsAccess: false,
+  report: null,
+  result: null,
+  savedReportCount: 0,
 };
 
 const elements = {
@@ -27,6 +38,7 @@ const elements = {
   articleMeta: document.querySelector("#article-meta"),
   articlePreview: document.querySelector("#article-preview"),
   articleTitle: document.querySelector("#article-title"),
+  changeModel: document.querySelector("#change-model"),
   clearCache: document.querySelector("#clear-cache"),
   clearKey: document.querySelector("#clear-key"),
   cancelAnalysis: document.querySelector("#cancel-analysis"),
@@ -44,6 +56,7 @@ const elements = {
   progressTitle: document.querySelector("#progress-title"),
   results: document.querySelector("#results"),
   saveSettings: document.querySelector("#save-settings"),
+  savedReportCount: document.querySelector("#saved-report-count"),
   settings: document.querySelector("#settings"),
   settingsForm: document.querySelector("#settings-form"),
   settingsToggle: document.querySelector("#settings-toggle"),
@@ -104,6 +117,21 @@ function defaultAnalyzeLabel() {
   return state.mode === "article" ? "Analyze article" : "Analyze selected text";
 }
 
+function updateAnalyzeUi() {
+  const connection = getConnectionState(state.settings || {});
+  const hasVisibleReport = Boolean(state.report);
+  if (state.needsAccess) {
+    elements.analyze.textContent = "Select toolbar icon first";
+  } else if (hasVisibleReport) {
+    elements.analyze.textContent = "Run a new analysis";
+  } else if (!connection.canAnalyze) {
+    elements.analyze.textContent = "Connect OpenAI to analyze";
+  } else {
+    elements.analyze.textContent = defaultAnalyzeLabel();
+  }
+  elements.analyze.disabled = state.needsAccess || !state.pageReady || !connection.canAnalyze;
+}
+
 function setEmptyState(title, description) {
   elements.emptyTitle.textContent = title;
   elements.emptyDescription.textContent = description;
@@ -114,25 +142,27 @@ function resetPageUi({ needsAccess = false } = {}) {
   state.pageRevision += 1;
   state.article = null;
   state.articleFingerprint = null;
+  state.pageReady = false;
+  state.needsAccess = needsAccess;
+  state.report = null;
+  state.result = null;
   clearProgressTimers();
   elements.progress.hidden = true;
   elements.articlePreview.hidden = true;
   elements.results.hidden = true;
   elements.emptyState.hidden = false;
-  elements.analyze.disabled = needsAccess;
   if (needsAccess) {
-    elements.analyze.textContent = "Select toolbar icon first";
     setEmptyState(
       "Allow LedeLens to read this tab",
       "Select the LedeLens icon in Chrome’s toolbar to connect this page. You don’t need to reload the page. If the icon isn’t visible, open Chrome’s Extensions menu and select LedeLens.",
     );
   } else {
-    elements.analyze.textContent = defaultAnalyzeLabel();
     setEmptyState(
       "Inspect this article's reasoning",
       "Examine its evidence, causal reasoning, context, and framing—without fact-checking.",
     );
   }
+  updateAnalyzeUi();
 }
 
 function clearProgressTimers() {
@@ -232,15 +262,32 @@ function cancelProgress(reason = "user_cancelled") {
 }
 
 function updateSettingsUi() {
-  if ([...elements.model.options].some((option) => option.value === state.settings.model)) {
-    elements.model.value = state.settings.model;
+  const connection = getConnectionState(state.settings || {});
+  if (state.settings.model && ![...elements.model.options].some((option) => option.value === state.settings.model)) {
+    const confirmedOption = document.createElement("option");
+    confirmedOption.value = state.settings.model;
+    confirmedOption.textContent = state.settings.model;
+    elements.model.replaceChildren(confirmedOption);
+    elements.model.disabled = true;
   }
-  elements.keyStatus.textContent = state.settings.hasApiKey && state.settings.model
-    ? "Model confirmed"
-    : "Not configured";
-  elements.keyStatus.classList.toggle("ready", state.settings.hasApiKey);
+  if (state.settings.model) elements.model.value = state.settings.model;
+  elements.keyStatus.textContent = connection.label;
+  elements.keyStatus.className = `status-pill ${connection.tone}`;
   elements.clearKey.disabled = !state.settings.hasApiKey;
-  elements.settings.hidden = Boolean(state.settings.hasApiKey && state.settings.model);
+  elements.changeModel.hidden = !connection.canAnalyze;
+  if (connection.canAnalyze && elements.model.disabled) {
+    elements.modelStatus.textContent = "This confirmed model is used without contacting OpenAI when the panel opens.";
+  }
+  updateAnalyzeUi();
+}
+
+function updateDataStatus(count) {
+  state.savedReportCount = Number.isInteger(count) && count > 0 ? count : 0;
+  elements.savedReportCount.textContent = savedReportCountLabel(state.savedReportCount);
+  elements.clearCache.disabled = state.savedReportCount === 0;
+  elements.clearCache.textContent = state.savedReportCount
+    ? `Delete ${state.savedReportCount} saved report${state.savedReportCount === 1 ? "" : "s"}`
+    : "Delete saved reports";
 }
 
 function populateModelOptions(models, selectedModel = null) {
@@ -267,7 +314,7 @@ function resetModelOptions() {
   elements.model.replaceChildren(placeholder);
   elements.model.disabled = true;
   elements.saveSettings.disabled = true;
-  elements.modelStatus.textContent = "Choose a model returned for this API key, then confirm the settings.";
+  elements.modelStatus.textContent = "Load the models available to this API key, then choose one.";
 }
 
 async function loadAvailableModels() {
@@ -280,8 +327,14 @@ async function loadAvailableModels() {
       type: "LIST_MODELS",
       payload: { apiKey: elements.apiKey.value },
     });
-    populateModelOptions(models, state.settings?.model);
-    setMessage("Choose a model from the OpenAI list, then confirm settings.");
+    state.settings = {
+      ...state.settings,
+      hasApiKey: true,
+      model: null,
+    };
+    populateModelOptions(models);
+    updateSettingsUi();
+    setMessage("Key added. Choose a model, then select Save and continue.");
   } catch (error) {
     setMessage(error.message, true);
   } finally {
@@ -327,6 +380,8 @@ async function extract(expectedRevision = state.pageRevision) {
   elements.articleMeta.textContent = details.join(" · ");
   elements.articlePreview.hidden = false;
   elements.emptyState.hidden = true;
+  state.pageReady = true;
+  updateAnalyzeUi();
   return article;
 }
 
@@ -340,9 +395,14 @@ async function loadCachedAnalysis(article, expectedRevision) {
   });
   if (expectedRevision !== state.pageRevision || !cached.hit) return false;
 
-  renderResults(cached.result);
-  elements.analyze.textContent = state.mode === "article" ? "Re-analyze article" : "Re-analyze selected text";
-  setMessage("Loaded the saved analysis for this page.");
+  state.report = {
+    source: "restored",
+    savedAt: cached.savedAt,
+    persisted: true,
+  };
+  renderResults(cached.result, state.report);
+  updateAnalyzeUi();
+  setMessage("");
   return true;
 }
 
@@ -360,8 +420,12 @@ async function refreshCurrentPage() {
     if (!article || expectedRevision !== state.pageRevision) return;
     const loaded = await loadCachedAnalysis(article, expectedRevision);
     if (expectedRevision !== state.pageRevision) return;
-    if (!loaded) setMessage("This page is ready to analyze.");
-    elements.analyze.disabled = false;
+    if (!loaded) setMessage(
+      getConnectionState(state.settings || {}).canAnalyze
+        ? "This page is ready to analyze."
+        : "Connect OpenAI in settings before starting a new analysis.",
+    );
+    updateAnalyzeUi();
   } catch (error) {
     if (expectedRevision !== state.pageRevision) return;
     if (/Click the LedeLens toolbar icon|cannot access|missing host permission/i.test(error.message)) {
@@ -412,6 +476,29 @@ function section(title, className = "") {
   const heading = document.createElement("h2");
   heading.textContent = title;
   container.append(heading);
+  return container;
+}
+
+function formatSavedAt(savedAt) {
+  if (!Number.isFinite(savedAt)) return "";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(savedAt));
+}
+
+function renderReportProvenance(report) {
+  const provenance = getReportProvenance(report);
+  const container = document.createElement("section");
+  container.className = `report-provenance ${provenance.tone}`;
+  container.setAttribute("aria-live", "polite");
+  const title = document.createElement("strong");
+  title.textContent = provenance.savedAt
+    ? `${provenance.title} · ${formatSavedAt(provenance.savedAt)}`
+    : provenance.title;
+  const description = document.createElement("p");
+  description.textContent = provenance.description;
+  container.append(title, description);
   return container;
 }
 
@@ -552,8 +639,10 @@ function renderConclusion(result) {
   return container;
 }
 
-function renderResults(result) {
+function renderResults(result, report) {
+  state.result = result;
   elements.results.replaceChildren(
+    renderReportProvenance(report),
     renderAssessment(result),
     renderConclusion(result),
     renderMetrics(result.article_metrics),
@@ -564,6 +653,11 @@ function renderResults(result) {
 
 async function analyze() {
   stopActiveAnalysis("superseded");
+  if (!getConnectionState(state.settings || {}).canAnalyze) {
+    elements.settings.hidden = false;
+    setMessage("Complete the OpenAI connection before starting an analysis.", true);
+    return;
+  }
   const analysisRevision = state.pageRevision;
   const operation = createAnalysisOperation(analysisRevision);
   state.activeAnalysis = operation;
@@ -599,6 +693,7 @@ async function analyze() {
       url: article.url,
       fingerprint: fingerprintArticle(article),
     };
+    let savedAt = null;
     try {
       const saved = await sendMessage({
         type: "SAVE_CACHED_ANALYSIS",
@@ -614,13 +709,21 @@ async function analyze() {
         }).catch(() => {});
         return;
       }
+      savedAt = saved.savedAt;
+      const { savedReportCount } = await sendMessage({ type: "GET_DATA_STATUS" });
+      updateDataStatus(savedReportCount);
     } catch {
       cacheWarning = "Analysis ready, but Chrome could not save it for this page.";
     }
     if (!isCurrentAnalysis(operation)) return;
     setProgress("render", "Building the report", "Organizing the assessment, metrics, issues, and source links.");
-    renderResults(result);
-    elements.analyze.textContent = state.mode === "article" ? "Re-analyze article" : "Re-analyze selected text";
+    state.report = {
+      source: "fresh",
+      savedAt,
+      persisted: Boolean(savedAt),
+    };
+    renderResults(result, state.report);
+    updateAnalyzeUi();
     completeProgress();
     setMessage(cacheWarning || formatDiagnostics(diagnostics));
   } catch (error) {
@@ -640,7 +743,7 @@ async function analyze() {
   } finally {
     if (state.activeAnalysis === operation) {
       state.activeAnalysis = null;
-      elements.analyze.disabled = false;
+      updateAnalyzeUi();
     }
   }
 }
@@ -670,25 +773,41 @@ elements.settingsForm.addEventListener("submit", async (event) => {
     });
     elements.apiKey.value = "";
     updateSettingsUi();
-    setMessage("Settings saved for this browser session.");
+    elements.settings.hidden = true;
+    setMessage(`Connected to OpenAI with ${state.settings.model}.`);
   } catch (error) {
     setMessage(error.message, true);
   }
 });
 
 elements.clearKey.addEventListener("click", async () => {
-  state.settings = await sendMessage({ type: "CLEAR_API_KEY" });
-  resetModelOptions();
-  updateSettingsUi();
-  elements.settings.hidden = false;
-  setMessage("Session API key cleared.");
+  if (!confirm("Delete the OpenAI API key from this browser session? You will need to enter it again before running a new analysis.")) return;
+  try {
+    state.settings = await sendMessage({ type: "CLEAR_API_KEY" });
+    resetModelOptions();
+    updateSettingsUi();
+    elements.settings.hidden = false;
+    setMessage("Session API key deleted. Saved reports remain on this device.");
+  } catch (error) {
+    setMessage(error.message, true);
+  }
 });
 
 elements.clearCache.addEventListener("click", async () => {
+  if (!state.savedReportCount) {
+    setMessage("There are no saved reports to delete.");
+    return;
+  }
+  if (!confirm(cacheDeletionPrompt(state.savedReportCount))) return;
   elements.clearCache.disabled = true;
   try {
-    await sendMessage({ type: "CLEAR_ANALYSIS_CACHE" });
-    setMessage("Saved analyses cleared from this Chrome profile.");
+    const { deletedCount } = await sendMessage({ type: "CLEAR_ANALYSIS_CACHE" });
+    updateDataStatus(0);
+    if (state.report?.persisted && state.result) {
+      state.report = { ...state.report, persisted: false };
+      renderResults(state.result, state.report);
+    }
+    setMessage(`${deletedCount} saved report${deletedCount === 1 ? "" : "s"} deleted from this Chrome profile.`);
   } catch (error) {
     setMessage(error.message, true);
   } finally {
@@ -697,6 +816,10 @@ elements.clearCache.addEventListener("click", async () => {
 });
 
 elements.loadModels.addEventListener("click", loadAvailableModels);
+elements.changeModel.addEventListener("click", async () => {
+  elements.loadModels.textContent = "Refresh model list";
+  await loadAvailableModels();
+});
 elements.model.addEventListener("change", () => {
   elements.saveSettings.disabled = !elements.model.value;
 });
@@ -739,12 +862,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 
 async function initialize() {
   try {
-    state.settings = await sendMessage({ type: "GET_SETTINGS" });
-    if (state.settings.hasApiKey) {
-      const { models } = await sendMessage({ type: "LIST_MODELS" });
-      populateModelOptions(models, state.settings.model);
-    }
+    const [settings, dataStatus] = await Promise.all([
+      sendMessage({ type: "GET_SETTINGS" }),
+      sendMessage({ type: "GET_DATA_STATUS" }),
+    ]);
+    state.settings = settings;
+    updateDataStatus(dataStatus.savedReportCount);
     updateSettingsUi();
+    elements.settings.hidden = getConnectionState(state.settings || {}).canAnalyze;
   } catch (error) {
     setMessage(error.message, true);
   }
