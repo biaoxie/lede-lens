@@ -329,12 +329,12 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid rgba(184, 7
 .tag.partial, .tag.not_applicable { color: var(--amber); background: #f4ead2; }
 .tag.missing, .tag.high { color: var(--red); background: #f5ddd6; }
 
-.metric, .claim, .relationship, .issue {
+.metric, .issue {
   padding: 12px 0;
   border-top: 1px solid var(--line);
 }
-.metric:first-of-type, .claim:first-of-type, .relationship:first-of-type, .issue:first-of-type { border-top: 0; }
-.metric p, .claim p, .relationship p, .issue p { margin-bottom: 7px; font-size: 12px; line-height: 1.5; }
+.metric:first-of-type, .issue:first-of-type { border-top: 0; }
+.metric p, .issue p { margin-bottom: 7px; font-size: 12px; line-height: 1.5; }
 .metric-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
 .metric-title h3 { margin: 0; }
 

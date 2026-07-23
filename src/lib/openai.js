@@ -1,4 +1,4 @@
-import { ALLOWED_MODELS, DEFAULT_MODEL } from "./models.js";
+import { isAnalysisModel } from "./models.js";
 import { validateAnalysisResult } from "./validator.js";
 
 const OPENAI_ENDPOINT = "https://api.openai.com/v1/responses";
@@ -57,7 +57,7 @@ export function parseSseBuffer(buffer) {
   return { events, remaining };
 }
 
-async function readResponseStream(response, onProgress) {
+async function readResponseStream(response, onProgress, requestStartedAt) {
   if (!response.body) throw new Error("OpenAI returned an empty response stream.");
 
   const reader = response.body.getReader();
@@ -65,6 +65,7 @@ async function readResponseStream(response, onProgress) {
   let buffer = "";
   let outputText = "";
   let completedResponse = null;
+  let firstOutputAt = null;
   const requestId = response.headers.get("x-request-id");
 
   const consume = (events) => {
@@ -72,6 +73,10 @@ async function readResponseStream(response, onProgress) {
       onProgress({ type: "stream_event", eventType: event.type, responseId: event.response?.id });
 
       if (event.type === "response.output_text.delta") {
+        if (!firstOutputAt) {
+          firstOutputAt = Date.now();
+          onProgress({ type: "first_output", elapsedMs: firstOutputAt - requestStartedAt });
+        }
         outputText += event.delta || "";
       } else if (event.type === "response.completed") {
         completedResponse = event.response;
@@ -104,6 +109,11 @@ async function readResponseStream(response, onProgress) {
   return {
     outputText: outputText || readOutputText(completedResponse),
     requestId,
+    diagnostics: {
+      timeToFirstOutputMs: firstOutputAt ? firstOutputAt - requestStartedAt : null,
+      totalMs: Date.now() - requestStartedAt,
+      usage: completedResponse.usage || null,
+    },
   };
 }
 
@@ -113,7 +123,7 @@ export async function analyzeArticle(article, onProgress = () => {}) {
   }
 
   const [{ model }, { openaiApiKey }, { systemPrompt, outputSchema }] = await Promise.all([
-    chrome.storage.local.get({ model: DEFAULT_MODEL }),
+    chrome.storage.local.get("model"),
     chrome.storage.session.get("openaiApiKey"),
     loadAssets(),
   ]);
@@ -121,11 +131,12 @@ export async function analyzeArticle(article, onProgress = () => {}) {
   if (!openaiApiKey) {
     throw new Error("Add an OpenAI API key before analyzing an article.");
   }
-  if (!ALLOWED_MODELS.has(model)) {
-    throw new Error("The selected model is not supported by this version of LedeLens.");
+  if (!isAnalysisModel(model)) {
+    throw new Error("Load the models available to your API key, then choose and confirm one.");
   }
 
   const clientRequestId = crypto.randomUUID();
+  const requestStartedAt = Date.now();
   onProgress({ type: "request_sent", clientRequestId, model });
 
   let response;
@@ -141,8 +152,8 @@ export async function analyzeArticle(article, onProgress = () => {}) {
         model,
         instructions: systemPrompt,
         input: JSON.stringify(article),
-        reasoning: { effort: "medium" },
         text: {
+          verbosity: "low",
           format: {
             type: "json_schema",
             name: "news_structure_analysis",
@@ -177,7 +188,7 @@ export async function analyzeArticle(article, onProgress = () => {}) {
   onProgress({ type: "response_started", requestId });
   let streamed;
   try {
-    streamed = await readResponseStream(response, onProgress);
+    streamed = await readResponseStream(response, onProgress, requestStartedAt);
   } catch (error) {
     throw new Error(withRequestReference(error.message, requestId), { cause: error });
   }
@@ -204,5 +215,5 @@ export async function analyzeArticle(article, onProgress = () => {}) {
     throw new Error(withRequestReference(message, finalRequestId));
   }
 
-  return { result, requestId: finalRequestId };
+  return { result, requestId: finalRequestId, diagnostics: streamed.diagnostics };
 }

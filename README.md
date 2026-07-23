@@ -1,6 +1,6 @@
 # LedeLens
 
-LedeLens is an open-source Chrome extension that audits the internal reasoning structure of news articles. It maps claims to evidence, examines causal and predictive moves, surfaces missing context, and separates reporting from framing.
+LedeLens is an open-source Chrome extension that audits the internal reasoning structure of news articles. It examines evidence, causal and predictive moves, missing context, and the separation between reporting and framing.
 
 It does **not** fact-check the article. Its core question is narrower:
 
@@ -8,8 +8,6 @@ It does **not** fact-check the article. Its core question is narrower:
 
 ## What it shows
 
-- Important claims, classified as descriptive, attributed, causal, predictive, evaluative, or normative
-- Explicit support, qualification, contradiction, explanation, and prediction relationships
 - Five structural metrics: evidence coverage, source traceability, causal support, context completeness, and framing/uncertainty separation
 - Material issues such as unsupported causation, missing baselines, scope shifts, one-sided sourcing, or certainty inflation
 - The strongest conclusion the article can support on its own terms
@@ -23,7 +21,7 @@ LedeLens is an early proof of concept. The first release:
 - runs as a Chrome Manifest V3 side panel;
 - analyzes a full article or selected text;
 - calls the OpenAI Responses API directly from the persistent side panel;
-- offers GPT-5.6 Sol, Terra, and Luna plus GPT-5.4 model choices;
+- lists the compatible GPT-5 models available to the user's OpenAI API key and requires an explicit selection;
 - stores the OpenAI API key in `chrome.storage.session`, which Chrome clears when the browser session ends;
 - validates every model result locally against JSON Schema before rendering it.
 
@@ -31,7 +29,7 @@ See [quick-start.md](quick-start.md) to load the extension locally.
 
 ## Product boundaries
 
-LedeLens evaluates article structure, not factual truth. It can identify what an article claims, how its own evidence is connected, whether causal language is internally supported, which context is missing, and what conclusion would follow if the reported material were accurate.
+LedeLens evaluates article structure, not factual truth. It assesses whether an article's important conclusions stay within its own evidence, whether causal language is internally supported, which context is missing, and what conclusion would follow if the reported material were accurate.
 
 It does not verify events, source credibility, linked documents, statistics, or author intent. `manipulation_risk_signals` describes observable textual patterns; it is never a claim that an author intended to manipulate readers.
 
@@ -45,12 +43,12 @@ article page
   -> persistent side panel reads the session-only API key
   -> OpenAI Responses API returns Structured Outputs
   -> local schema and reference validation
-  -> side panel renders claims, metrics, issues, and paragraph links
+  -> side panel renders the verdict, metrics, issues, conclusion, and paragraph links
 ```
 
 The extracted article is untrusted input. Article text is sent separately from the system instruction and cannot redefine the analysis role or output contract.
 
-The canonical model behavior lives in [`skills/analyze-news-structure/assets/system-prompt.md`](skills/analyze-news-structure/assets/system-prompt.md). The canonical response contract is [`skills/analyze-news-structure/assets/output-schema.json`](skills/analyze-news-structure/assets/output-schema.json). Breaking field or meaning changes require a schema version newer than `0.1.0`.
+The canonical model behavior lives in [`skills/analyze-news-structure/assets/system-prompt.md`](skills/analyze-news-structure/assets/system-prompt.md). The canonical response contract is [`skills/analyze-news-structure/assets/output-schema.json`](skills/analyze-news-structure/assets/output-schema.json). Breaking field or meaning changes require a new schema version; see [`MIGRATIONS.md`](MIGRATIONS.md).
 
 ## Security and privacy
 
@@ -65,6 +63,8 @@ Direct browser-to-provider calls are a deliberate proof-of-concept tradeoff. Led
 A browser extension remains a sensitive place for a provider credential. Review [SECURITY.md](SECURITY.md) before using LedeLens with a valuable or broadly privileged key. A production distribution should consider a scoped token broker or local companion.
 
 Long-running model requests execute in the open side panel rather than the Manifest V3 service worker. They use the Responses API's server-sent event stream so the connection receives lifecycle events and output while the model works. This avoids idle fetch timeouts while keeping credentials inside extension contexts and out of article pages. Each OpenAI call includes a unique client request ID so network failures can be traced without exposing the API key.
+
+The request does not override reasoning effort; the selected model uses its own default behavior. It uses low output verbosity to reduce redundant JSON prose while preserving the complete analysis contract. After each successful run, the side panel reports time to first output, total request time, and reasoning-token usage when OpenAI supplies it. Time to first output includes queueing and model preparation; the API does not expose reasoning wall-clock time separately.
 
 ## Development
 

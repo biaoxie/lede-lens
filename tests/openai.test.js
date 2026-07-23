@@ -59,7 +59,10 @@ function installFetch(apiResponse) {
     assert.equal(options.method, "POST");
     assert.match(options.headers.Authorization, /^Bearer sk-/);
     assert.ok(options.headers["X-Client-Request-Id"]);
-    assert.equal(JSON.parse(options.body).stream, true);
+    const request = JSON.parse(options.body);
+    assert.equal(request.stream, true);
+    assert.equal("reasoning" in request, false);
+    assert.equal(request.text.verbosity, "low");
     if (apiResponse instanceof Error) throw apiResponse;
     return typeof apiResponse === "function" ? apiResponse() : apiResponse;
   };
@@ -149,7 +152,17 @@ test("streams, validates, and returns a complete analysis", async () => {
   installFetch(streamResponse([
     { type: "response.created", response: { id: "resp_1" } },
     { type: "response.output_text.delta", delta: JSON.stringify(fixture) },
-    { type: "response.completed", response: { id: "resp_1", output: [] } },
+    {
+      type: "response.completed",
+      response: {
+        id: "resp_1",
+        output: [],
+        usage: {
+          output_tokens: 900,
+          output_tokens_details: { reasoning_tokens: 120 },
+        },
+      },
+    },
   ]));
 
   const completed = await analyzeArticle(article, (event) => progress.push(event.type));
@@ -158,7 +171,11 @@ test("streams, validates, and returns a complete analysis", async () => {
   assert.ok(progress.includes("request_sent"));
   assert.ok(progress.includes("response_started"));
   assert.ok(progress.includes("stream_event"));
+  assert.ok(progress.includes("first_output"));
   assert.ok(progress.includes("validating"));
+  assert.equal(completed.diagnostics.usage.output_tokens_details.reasoning_tokens, 120);
+  assert.ok(completed.diagnostics.timeToFirstOutputMs >= 0);
+  assert.ok(completed.diagnostics.totalMs >= 0);
 });
 
 test("falls back to completed response output when no deltas arrive", async () => {
@@ -190,7 +207,7 @@ test("rejects missing articles, keys, and unsupported models", async () => {
   storedKey = "sk-test";
 
   storedModel = "unsupported";
-  await assert.rejects(() => analyzeArticle(article), /selected model is not supported/);
+  await assert.rejects(() => analyzeArticle(article), /Load the models available/);
   storedModel = "gpt-5.6-terra";
 });
 
@@ -300,7 +317,7 @@ test("rejects malformed and schema-invalid streamed output", async () => {
   await assert.rejects(() => analyzeArticle(article), /malformed JSON.*req_test/i);
 
   installFetch(streamResponse([
-    { type: "response.output_text.delta", delta: JSON.stringify({ schema_version: "0.1.0" }) },
+    { type: "response.output_text.delta", delta: JSON.stringify({ schema_version: "0.2.0" }) },
     { type: "response.completed", response: { id: "resp_bad_schema", output: [] } },
   ]));
   await assert.rejects(() => analyzeArticle(article), /failed local validation.*req_test/i);

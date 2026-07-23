@@ -13,6 +13,6 @@
 - Keep the analysis skill provider-neutral.
 - Keep provider credentials out of article pages and content scripts.
 - Do not add factual verification to the structural-analysis result.
-- Do not silently change schema version `0.1.0`; use a new version for breaking field or meaning changes.
+- Do not silently change schema version `0.2.0`; use a new version for breaking field or meaning changes.
 - Validate model output locally before rendering it.
 - Preserve paragraph IDs so every important result can link back to the article.

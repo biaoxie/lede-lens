@@ -106,40 +106,13 @@ export function validateJsonSchema(value, schema) {
   return { valid: errors.length === 0, errors };
 }
 
-function findDuplicates(values) {
-  const seen = new Set();
-  return values.filter((value) => {
-    if (seen.has(value)) return true;
-    seen.add(value);
-    return false;
-  });
-}
-
 export function validateAnalysisResult(result, schema, paragraphIds = []) {
   const validation = validateJsonSchema(result, schema);
   const errors = [...validation.errors];
   if (errors.length) return { valid: false, errors };
 
-  const claimIds = result.claims.map((claim) => claim.id);
-  const duplicateClaimIds = findDuplicates(claimIds);
-  if (duplicateClaimIds.length) {
-    errors.push(`Duplicate claim IDs: ${[...new Set(duplicateClaimIds)].join(", ")}.`);
-  }
-
-  const knownClaims = new Set(claimIds);
-  for (const relationship of result.relationships) {
-    if (!knownClaims.has(relationship.from_claim_id)) {
-      errors.push(`Unknown relationship source: ${relationship.from_claim_id}.`);
-    }
-    if (!knownClaims.has(relationship.to_claim_id)) {
-      errors.push(`Unknown relationship target: ${relationship.to_claim_id}.`);
-    }
-  }
-
   const knownParagraphs = new Set(paragraphIds);
   const referencedParagraphs = [
-    ...result.claims.flatMap((claim) => claim.paragraph_ids),
-    ...result.relationships.flatMap((relationship) => relationship.paragraph_ids),
     ...Object.values(result.article_metrics).flatMap((metric) => metric.paragraph_ids),
     ...result.issues.flatMap((issue) => issue.paragraph_ids),
   ];

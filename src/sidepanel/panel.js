@@ -1,4 +1,3 @@
-import { MODEL_CATALOG } from "../lib/models.js";
 import { analyzeArticle } from "../lib/openai.js";
 import { EVIDENCE_RATINGS, PRESENTATION_RATINGS, findRating } from "../lib/ratings.js";
 
@@ -17,13 +16,16 @@ const elements = {
   clearKey: document.querySelector("#clear-key"),
   emptyState: document.querySelector("#empty-state"),
   keyStatus: document.querySelector("#key-status"),
+  loadModels: document.querySelector("#load-models"),
   message: document.querySelector("#message"),
   model: document.querySelector("#model"),
+  modelStatus: document.querySelector("#model-status"),
   progress: document.querySelector("#progress"),
   progressDetail: document.querySelector("#progress-detail"),
   progressElapsed: document.querySelector("#progress-elapsed"),
   progressTitle: document.querySelector("#progress-title"),
   results: document.querySelector("#results"),
+  saveSettings: document.querySelector("#save-settings"),
   settings: document.querySelector("#settings"),
   settingsForm: document.querySelector("#settings-form"),
   settingsToggle: document.querySelector("#settings-toggle"),
@@ -59,6 +61,20 @@ function formatElapsed(milliseconds) {
   return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, "0")}`;
 }
 
+function formatSeconds(milliseconds) {
+  return Number.isFinite(milliseconds) ? `${(milliseconds / 1000).toFixed(1)}s` : "not reported";
+}
+
+function formatDiagnostics(diagnostics) {
+  const reasoningTokens = diagnostics?.usage?.output_tokens_details?.reasoning_tokens;
+  const parts = [
+    `first output ${formatSeconds(diagnostics?.timeToFirstOutputMs)}`,
+    `total ${formatSeconds(diagnostics?.totalMs)}`,
+  ];
+  if (Number.isFinite(reasoningTokens)) parts.push(`${reasoningTokens} reasoning tokens`);
+  return `OpenAI timing: ${parts.join(" · ")}.`;
+}
+
 function setProgress(step, title, detail) {
   activeProgressStep = step;
   const activeIndex = progressOrder.indexOf(step);
@@ -86,7 +102,7 @@ function startProgress() {
 function narrateModelWait(paragraphCount) {
   const updates = [
     [6_000, `OpenAI is working through ${paragraphCount} source paragraphs. This can take a minute.`],
-    [16_000, "Still working—checking claims, evidence, causal links, and missing context."],
+    [16_000, "Still working—checking evidence, causal reasoning, and missing context."],
     [32_000, "Still working. Deeper reasoning may take longer; LedeLens has not timed out."],
     [60_000, "Waiting for OpenAI to finish the structured report. You can keep reading this tab."],
   ];
@@ -118,21 +134,61 @@ function failProgress() {
 }
 
 function updateSettingsUi() {
-  elements.model.value = state.settings.model;
-  elements.keyStatus.textContent = state.settings.hasApiKey ? "Session key ready" : "Not configured";
+  if ([...elements.model.options].some((option) => option.value === state.settings.model)) {
+    elements.model.value = state.settings.model;
+  }
+  elements.keyStatus.textContent = state.settings.hasApiKey && state.settings.model
+    ? "Model confirmed"
+    : "Not configured";
   elements.keyStatus.classList.toggle("ready", state.settings.hasApiKey);
   elements.clearKey.disabled = !state.settings.hasApiKey;
-  elements.settings.hidden = state.settings.hasApiKey;
+  elements.settings.hidden = Boolean(state.settings.hasApiKey && state.settings.model);
 }
 
-function populateModelOptions() {
-  const options = MODEL_CATALOG.map(({ id, label }) => {
+function populateModelOptions(models, selectedModel = null) {
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Choose a model";
+  const options = models.map((model) => {
     const option = document.createElement("option");
-    option.value = id;
-    option.textContent = label;
+    option.value = model;
+    option.textContent = model;
     return option;
   });
-  elements.model.replaceChildren(...options);
+  elements.model.replaceChildren(placeholder, ...options);
+  elements.model.disabled = false;
+  elements.model.value = models.includes(selectedModel) ? selectedModel : "";
+  elements.saveSettings.disabled = !elements.model.value;
+  elements.modelStatus.textContent = `${models.length} compatible model${models.length === 1 ? "" : "s"} returned by OpenAI.`;
+}
+
+function resetModelOptions() {
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Load models from OpenAI first";
+  elements.model.replaceChildren(placeholder);
+  elements.model.disabled = true;
+  elements.saveSettings.disabled = true;
+  elements.modelStatus.textContent = "Choose a model returned for this API key, then confirm the settings.";
+}
+
+async function loadAvailableModels() {
+  elements.loadModels.disabled = true;
+  elements.saveSettings.disabled = true;
+  elements.model.disabled = true;
+  setMessage("Loading models from OpenAI…");
+  try {
+    const { models } = await sendMessage({
+      type: "LIST_MODELS",
+      payload: { apiKey: elements.apiKey.value },
+    });
+    populateModelOptions(models, state.settings?.model);
+    setMessage("Choose a model from the OpenAI list, then confirm settings.");
+  } catch (error) {
+    setMessage(error.message, true);
+  } finally {
+    elements.loadModels.disabled = false;
+  }
 }
 
 async function activeTab() {
@@ -300,42 +356,6 @@ function renderMetrics(metrics) {
   return container;
 }
 
-function renderClaims(claims) {
-  const container = section(`Claims (${claims.length})`);
-  for (const claim of claims) {
-    const item = document.createElement("article");
-    item.className = "claim";
-    const heading = document.createElement("h3");
-    heading.textContent = `${claim.id} · ${claim.type}`;
-    const text = document.createElement("p");
-    text.textContent = claim.text;
-    item.append(heading, text, paragraphLinks(claim.paragraph_ids));
-    container.append(item);
-  }
-  return container;
-}
-
-function renderRelationships(relationships) {
-  const container = section(`Claim relationships (${relationships.length})`);
-  if (!relationships.length) {
-    const empty = document.createElement("p");
-    empty.className = "muted";
-    empty.textContent = "No explicit relationships were identified.";
-    container.append(empty);
-  }
-  for (const relationship of relationships) {
-    const item = document.createElement("article");
-    item.className = "relationship";
-    const heading = document.createElement("h3");
-    heading.textContent = `${relationship.from_claim_id} ${relationship.type} ${relationship.to_claim_id}`;
-    const rationale = document.createElement("p");
-    rationale.textContent = relationship.rationale;
-    item.append(heading, rationale, paragraphLinks(relationship.paragraph_ids));
-    container.append(item);
-  }
-  return container;
-}
-
 function renderIssues(issues) {
   const container = section(`Material issues (${issues.length})`);
   if (!issues.length) {
@@ -373,8 +393,6 @@ function renderResults(result) {
     renderConclusion(result),
     renderMetrics(result.article_metrics),
     renderIssues(result.issues),
-    renderClaims(result.claims),
-    renderRelationships(result.relationships),
   );
   elements.results.hidden = false;
 }
@@ -392,19 +410,21 @@ async function analyze() {
       `Prepared ${article.paragraphs.length} source paragraphs and sending them to OpenAI.`,
     );
     narrateModelWait(article.paragraphs.length);
-    const { result } = await analyzeArticle(article, ({ type, eventType }) => {
+    const { result, diagnostics } = await analyzeArticle(article, ({ type, eventType, elapsedMs }) => {
       if (type === "response_started") {
-        setProgress("analyze", "OpenAI accepted the request", "The live response stream is connected. Waiting for the model's analysis.");
+        setProgress("analyze", "OpenAI accepted the request", "The live response stream is connected. The model is reasoning and preparing the report.");
+      } else if (type === "first_output") {
+        setProgress("analyze", "Receiving the structured report", `OpenAI began returning the report after ${formatSeconds(elapsedMs)}.`);
       } else if (type === "stream_event" && eventType === "response.output_text.delta") {
         setProgress("analyze", "Receiving the structured report", "OpenAI is streaming the analysis back to LedeLens.");
       } else if (type === "validating") {
-        setProgress("validate", "Validating every reference", "Checking the schema, claim links, and paragraph references.");
+        setProgress("validate", "Validating every reference", "Checking the schema, metrics, issues, and paragraph references.");
       }
     });
-    setProgress("render", "Building the report", "Organizing the assessment, metrics, claims, and source links.");
+    setProgress("render", "Building the report", "Organizing the assessment, metrics, issues, and source links.");
     renderResults(result);
     completeProgress();
-    setMessage("");
+    setMessage(formatDiagnostics(diagnostics));
   } catch (error) {
     failProgress();
     setMessage(error.message, true);
@@ -432,7 +452,7 @@ elements.settingsToggle.addEventListener("click", () => {
 
 elements.settingsForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  setMessage("Saving settings…");
+  setMessage("Confirming this model with OpenAI…");
   try {
     state.settings = await sendMessage({
       type: "SAVE_SETTINGS",
@@ -448,17 +468,30 @@ elements.settingsForm.addEventListener("submit", async (event) => {
 
 elements.clearKey.addEventListener("click", async () => {
   state.settings = await sendMessage({ type: "CLEAR_API_KEY" });
+  resetModelOptions();
   updateSettingsUi();
   elements.settings.hidden = false;
   setMessage("Session API key cleared.");
 });
 
+elements.loadModels.addEventListener("click", loadAvailableModels);
+elements.model.addEventListener("change", () => {
+  elements.saveSettings.disabled = !elements.model.value;
+});
+elements.apiKey.addEventListener("input", () => {
+  if (!elements.apiKey.value.trim()) return;
+  resetModelOptions();
+  elements.modelStatus.textContent = "Load models again to verify this API key.";
+});
 elements.analyze.addEventListener("click", analyze);
 
 async function initialize() {
   try {
-    populateModelOptions();
     state.settings = await sendMessage({ type: "GET_SETTINGS" });
+    if (state.settings.hasApiKey) {
+      const { models } = await sendMessage({ type: "LIST_MODELS" });
+      populateModelOptions(models, state.settings.model);
+    }
     updateSettingsUi();
   } catch (error) {
     setMessage(error.message, true);

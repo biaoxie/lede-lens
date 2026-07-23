@@ -31,13 +31,10 @@ npm ci
 
 1. Open a regular news article.
 2. Select the LedeLens toolbar icon to open the side panel.
-3. Choose an OpenAI model:
-   - **GPT-5.6 Sol** for the strongest analysis;
-   - **GPT-5.6 Terra** for a balance of quality and cost;
-   - **GPT-5.6 Luna** for lower latency and high-volume use;
-   - **GPT-5.4** when you need compatibility with that model generation.
-4. Paste an OpenAI API key.
-5. Select **Save settings**.
+3. Paste an OpenAI API key.
+4. Select **Load available models**. LedeLens requests `/v1/models` directly from OpenAI and displays compatible GPT-5 models returned for that API project.
+5. Choose a model from the returned list.
+6. Select **Confirm settings**. LedeLens verifies the choice against OpenAI again before saving it.
 
 The key is stored in `chrome.storage.session`. Chrome clears it when the browser session ends, so you will enter it again after fully closing and reopening Chrome.
 

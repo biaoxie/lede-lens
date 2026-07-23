@@ -1,4 +1,4 @@
-import { ALLOWED_MODELS, DEFAULT_MODEL } from "./lib/models.js";
+import { fetchAnalysisModels, isAnalysisModel } from "./lib/models.js";
 
 function configureActionBehavior() {
   return chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
@@ -14,30 +14,42 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 async function getSettings() {
-  const [{ model }, { openaiApiKey }] = await Promise.all([
-    chrome.storage.local.get({ model: DEFAULT_MODEL }),
+  const [{ model = null }, { openaiApiKey }] = await Promise.all([
+    chrome.storage.local.get("model"),
     chrome.storage.session.get("openaiApiKey"),
   ]);
   return {
-    model: ALLOWED_MODELS.has(model) ? model : DEFAULT_MODEL,
+    model: isAnalysisModel(model) ? model : null,
     hasApiKey: Boolean(openaiApiKey),
   };
 }
 
+async function resolveApiKey(apiKey) {
+  const providedKey = (apiKey || "").trim();
+  if (providedKey) return providedKey;
+  const { openaiApiKey } = await chrome.storage.session.get("openaiApiKey");
+  if (!openaiApiKey) throw new Error("Enter an OpenAI API key to load models.");
+  return openaiApiKey;
+}
+
+async function listModels({ apiKey } = {}) {
+  const resolvedKey = await resolveApiKey(apiKey);
+  return {
+    models: await fetchAnalysisModels(resolvedKey),
+  };
+}
+
 async function saveSettings({ model, apiKey }) {
-  if (!ALLOWED_MODELS.has(model)) {
-    throw new Error("Choose a supported OpenAI model.");
-  }
-  await chrome.storage.local.set({ model });
-
-  const normalizedKey = (apiKey || "").trim();
-  if (normalizedKey) {
-    if (!normalizedKey.startsWith("sk-")) {
-      throw new Error("The API key does not look like an OpenAI key.");
-    }
-    await chrome.storage.session.set({ openaiApiKey: normalizedKey });
+  const resolvedKey = await resolveApiKey(apiKey);
+  const models = await fetchAnalysisModels(resolvedKey);
+  if (!models.includes(model)) {
+    throw new Error("Choose a model returned for this OpenAI API key.");
   }
 
+  await Promise.all([
+    chrome.storage.local.set({ model }),
+    chrome.storage.session.set({ openaiApiKey: resolvedKey }),
+  ]);
   return getSettings();
 }
 
@@ -46,6 +58,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     switch (message?.type) {
       case "GET_SETTINGS":
         return getSettings();
+      case "LIST_MODELS":
+        return listModels(message.payload || {});
       case "SAVE_SETTINGS":
         return saveSettings(message.payload || {});
       case "CLEAR_API_KEY":

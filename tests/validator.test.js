@@ -33,18 +33,18 @@ test("rejects an invalid metric status", () => {
 
 test("rejects unknown paragraph references", () => {
   const changed = structuredClone(fixture);
-  changed.claims[0].paragraph_ids = ["p999"];
+  changed.article_metrics.evidence_coverage.paragraph_ids = ["p999"];
   const result = validateAnalysisResult(changed, schema, paragraphIds);
   assert.equal(result.valid, false);
   assert.match(result.errors.join("\n"), /Unknown paragraph reference: p999/);
 });
 
-test("rejects relationships that reference unknown claims", () => {
+test("rejects unknown issue paragraph references", () => {
   const changed = structuredClone(fixture);
-  changed.relationships[0].to_claim_id = "c999";
+  changed.issues[0].paragraph_ids = ["p999"];
   const result = validateAnalysisResult(changed, schema, paragraphIds);
   assert.equal(result.valid, false);
-  assert.match(result.errors.join("\n"), /Unknown relationship target: c999/);
+  assert.match(result.errors.join("\n"), /Unknown paragraph reference: p999/);
 });
 
 test("validates primitive, nullable, numeric, and object types", () => {
@@ -105,21 +105,13 @@ test("reports unsupported and unresolved schema references", () => {
   assert.match(result.errors.join("\n"), /unresolved schema reference/);
 });
 
-test("reports missing fields and duplicate or unknown claim references", () => {
+test("reports missing fields", () => {
   const missing = validateJsonSchema({}, {
     type: "object",
     required: ["name"],
     properties: { name: { type: "string" } },
   });
   assert.match(missing.errors.join("\n"), /missing required field name/);
-
-  const changed = structuredClone(fixture);
-  changed.claims[1].id = changed.claims[0].id;
-  changed.relationships[0].from_claim_id = "c999";
-  const result = validateAnalysisResult(changed, schema, paragraphIds);
-  const errors = result.errors.join("\n");
-  assert.match(errors, /Duplicate claim IDs/);
-  assert.match(errors, /Unknown relationship source/);
 });
 
 test("covers permissive containers and invalid analysis short-circuiting", () => {

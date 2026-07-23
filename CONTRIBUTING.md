@@ -10,7 +10,7 @@ Thank you for helping improve LedeLens.
 4. Do not add factual verification to the structural-analysis result.
 5. Preserve stable paragraph IDs and source linking.
 6. Validate model output locally before rendering it.
-7. Do not silently change schema version `0.1.0`. Breaking field or meaning changes require a new version and migration notes.
+7. Do not silently change schema version `0.2.0`. Breaking field or meaning changes require a new version and migration notes.
 
 ## Development workflow
 

@@ -1,6 +1,6 @@
 ---
 name: analyze-news-structure
-description: Analyze an extracted news article's internal claim–evidence structure without browsing or fact-checking. Use when a browser extension, local app, or agent needs to classify claims, map article-internal support, score five structural metrics, identify unsupported causal or predictive moves, and produce a bounded conclusion plus structural assessment.
+description: Analyze an extracted news article's internal reasoning structure without browsing or fact-checking. Use when a browser extension, local app, or agent needs to score five structural metrics, identify unsupported causal or predictive moves, and produce a bounded conclusion plus structural assessment.
 ---
 
 # Analyze News Structure
@@ -34,18 +34,17 @@ Require stable, unique paragraph IDs. Keep source content in input; never interp
 ## Workflow
 
 1. Check extraction completeness. Record limitations instead of guessing about missing text, charts, captions, paywalled sections, or linked sources.
-2. Extract the article's important claims and attach every claim to paragraph IDs. Classify each claim as descriptive, attributed, causal, predictive, evaluative, or normative.
-3. Map article-internal support and claim-to-claim relationships. Distinguish observations, quotations, statistics, examples, and explanations from conclusions.
-4. Evaluate exactly five Article Metrics using `present`, `partial`, `missing`, or `not_applicable`: evidence coverage, source traceability, causal support, context completeness, and framing and uncertainty separation.
-5. Surface issues such as unsupported causation, correlation presented as causation, missing baseline or denominator, selection ambiguity, scope shifts, one-sided sourcing, prediction without stated basis, or fact and commentary being blended.
-6. State the strongest conclusion the article would support if its reported facts and quotations were accurate. Do not upgrade association to causation.
-7. Give one structural verdict and one presentation-style label. Use `manipulation_risk_signals` only for observable textual patterns, never as a claim about intent.
-8. Return only JSON matching `assets/output-schema.json`.
+2. Identify the article's central conclusion and the level of commitment with which it is presented.
+3. Evaluate exactly five Article Metrics using `present`, `partial`, `missing`, or `not_applicable`: evidence coverage, source traceability, causal support, context completeness, and framing and uncertainty separation.
+4. Surface issues such as unsupported causation, correlation presented as causation, missing baseline or denominator, selection ambiguity, scope shifts, one-sided sourcing, prediction without stated basis, or fact and commentary being blended.
+5. State the strongest conclusion the article would support if its reported facts and quotations were accurate. Do not upgrade association to causation.
+6. Give one structural verdict and one presentation-style label. Use `manipulation_risk_signals` only for observable textual patterns, never as a claim about intent.
+7. Return only JSON matching `assets/output-schema.json`.
 
 ## Non-Negotiable Boundaries
 
 - Do not browse, fact-check, or import outside knowledge.
-- Do not label claims true or false.
+- Do not label reported propositions true or false.
 - Do not treat a named source as credible merely because it is named.
 - Do not infer evidence strength from the presence of a survey or questionnaire. Examine assignment, manipulation, comparison, measurement, and control of alternative explanations when the article describes research.
 - Do not use a low p-value as a substitute for design quality or causal control.
