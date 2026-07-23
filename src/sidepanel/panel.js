@@ -460,10 +460,22 @@ async function runContentFunction(functionName, ...args) {
     });
     const [execution] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: (name, values) => globalThis.__ledeLens[name](...values),
+      func: (name, values) => {
+        try {
+          return { ok: true, value: globalThis.__ledeLens[name](...values) };
+        } catch (error) {
+          return {
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+      },
       args: [functionName, args],
     });
-    return execution.result;
+    if (!execution?.result?.ok) {
+      throw new Error(execution?.result?.error || "The page action could not be completed.");
+    }
+    return execution.result.value;
   } catch (error) {
     if (/cannot access|missing host permission|extensions gallery cannot be scripted/i.test(error.message)) {
       throw new Error("Click the LedeLens toolbar icon on this tab to grant page access, then try again.");
