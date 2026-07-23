@@ -5,12 +5,17 @@ const OPENAI_ENDPOINT = "https://api.openai.com/v1/responses";
 
 let assetsPromise;
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
-});
+function configureActionBehavior() {
+  return chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
+}
 
-chrome.runtime.onStartup.addListener(() => {
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+configureActionBehavior().catch(() => {});
+chrome.runtime.onInstalled.addListener(() => configureActionBehavior().catch(() => {}));
+chrome.runtime.onStartup.addListener(() => configureActionBehavior().catch(() => {}));
+
+chrome.action.onClicked.addListener((tab) => {
+  if (!tab.id) return;
+  chrome.sidePanel.open({ tabId: tab.id }).catch(() => {});
 });
 
 async function loadAssets() {

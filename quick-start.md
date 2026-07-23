@@ -1,6 +1,6 @@
 # LedeLens quick start
 
-This guide loads the development version of LedeLens directly into Google Chrome. No build step is required.
+This guide loads the development version of LedeLens directly into Google Chrome.
 
 ## 1. Get the repository
 
@@ -12,6 +12,12 @@ cd lede-lens
 ```
 
 If you received the source another way, open its root folder—the folder containing `manifest.json`.
+
+Install the article parser dependency:
+
+```bash
+npm ci
+```
 
 ## 2. Load the extension
 
@@ -56,9 +62,13 @@ For a specific passage:
 
 Some sites render articles inside unusual containers, interactive viewers, or inaccessible frames. Try selecting the relevant passage and use **Selected text**.
 
+Full-article mode uses Mozilla Readability, the standalone article parser used by Firefox Reader View. It analyzes the page structure and text density rather than relying on site-specific CSS selectors. When reader-mode extraction cannot identify an article, LedeLens reports a partial extraction instead of silently applying a site-specific rule.
+
 ### Chrome will not allow analysis on the page
 
 Chrome blocks extensions on internal pages such as `chrome://settings`, the Chrome Web Store, and some protected documents. Open a regular `http://` or `https://` page.
+
+LedeLens uses Chrome's temporary `activeTab` permission instead of requesting permanent access to every website. When you switch to an article on a different site, click the LedeLens toolbar icon on that tab before selecting **Analyze article**.
 
 ### The API request fails
 

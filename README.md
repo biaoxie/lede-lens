@@ -39,7 +39,8 @@ It does not verify events, source credibility, linked documents, statistics, or 
 
 ```text
 article page
-  -> isolated content script extracts metadata and stable paragraph IDs
+  -> Mozilla Readability extracts the article from a cloned page
+  -> isolated content script maps the coherent reader result and stable paragraph IDs back to the live page
   -> side panel requests an analysis
   -> service worker reads the session-only API key
   -> OpenAI Responses API returns Structured Outputs
@@ -71,20 +72,21 @@ Requirements:
 - Node.js 20 or newer for local verification
 - An OpenAI API key for live analysis
 
-Run the repository checks:
+Install dependencies and run the repository checks:
 
 ```bash
+npm ci
 npm run verify
 ```
 
-The extension has no runtime package dependencies and no build step. Reload it from `chrome://extensions` after changing source files.
+Mozilla Readability is the only runtime package dependency. It runs locally against a cloned document; LedeLens does not send the page to a separate extraction service. Reload the extension from `chrome://extensions` after changing source files.
 
 ## Project layout
 
 ```text
 manifest.json                         Chrome extension manifest
 src/background.js                    OpenAI request and credential boundary
-src/content.js                       Article extraction and paragraph highlighting
+src/content.js                       Reader-mode extraction, source mapping, and highlighting
 src/lib/validator.js                 Local schema and reference validation
 src/sidepanel/                        Side panel UI
 skills/analyze-news-structure/        Provider-neutral analysis contract

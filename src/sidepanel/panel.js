@@ -56,19 +56,28 @@ function populateModelOptions() {
 async function activeTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) throw new Error("No active browser tab is available.");
-  if (!/^https?:/.test(tab.url || "")) throw new Error("Open a regular web page to use LedeLens.");
   return tab;
 }
 
 async function runContentFunction(functionName, ...args) {
   const tab = await activeTab();
-  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["src/content.js"] });
-  const [execution] = await chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    func: (name, values) => globalThis.__ledeLens[name](...values),
-    args: [functionName, args],
-  });
-  return execution.result;
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ["node_modules/@mozilla/readability/Readability.js", "src/content.js"],
+    });
+    const [execution] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (name, values) => globalThis.__ledeLens[name](...values),
+      args: [functionName, args],
+    });
+    return execution.result;
+  } catch (error) {
+    if (/cannot access|missing host permission|extensions gallery cannot be scripted/i.test(error.message)) {
+      throw new Error("Click the LedeLens toolbar icon on this tab to grant page access, then try again.");
+    }
+    throw error;
+  }
 }
 
 async function extract() {
