@@ -25,3 +25,10 @@ test("cancelled request rejection remains distinct from failure progress", () =>
     /if \(error\?\.category === "cancelled"\) \{\s+cancelProgress/,
   );
 });
+
+test("cancellation during extraction cannot advance to analysis progress", () => {
+  assert.match(
+    panelSource,
+    /const article = await extract\(analysisRevision\);\s+if \(!article\) return;\s+if \(!isCurrentAnalysis\(operation\)\) return;\s+setProgress\(/,
+  );
+});

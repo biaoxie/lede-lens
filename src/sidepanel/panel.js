@@ -574,6 +574,7 @@ async function analyze() {
   try {
     const article = await extract(analysisRevision);
     if (!article) return;
+    if (!isCurrentAnalysis(operation)) return;
     setProgress(
       "analyze",
       "Analyzing article structure",
