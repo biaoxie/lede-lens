@@ -674,12 +674,12 @@ button { color: inherit; }
   font-size: 23px;
 }
 
-.overall-rating button {
+.overall-rating button,
+.style-row button {
   display: grid;
   place-items: center;
   width: 18px;
   height: 18px;
-  margin-left: 2px;
   padding: 0;
   border: 1px solid #bcb5aa;
   border-radius: 50%;
@@ -689,6 +689,8 @@ button { color: inherit; }
   font-size: 9px;
   cursor: help;
 }
+
+.overall-rating button { margin-left: 2px; }
 
 .rating-tooltip {
   position: absolute;
@@ -717,14 +719,17 @@ button { color: inherit; }
 }
 
 .style-row {
+  position: relative;
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   margin-top: 14px;
   padding-top: 11px;
   border-top: 1px solid var(--rule);
   font-size: 10px;
 }
 
+.style-row strong { margin-left: auto; }
 .style-row strong { color: var(--green); }
 
 .result-section h2,

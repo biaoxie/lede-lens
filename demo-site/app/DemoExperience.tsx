@@ -7,33 +7,35 @@ type DemoStage = "closed" | "ready" | "loading" | "complete";
 
 const metricLabels: Record<string, string> = {
   evidence_coverage: "What supports the main point?",
-  source_traceability: "Who says this?",
-  causal_support: "Does the article show why?",
-  context_completeness: "What important context is missing?",
-  framing_uncertainty_separation: "Are facts, interpretation, and uncertainty kept separate?",
+  source_traceability: "Can you tell who says what?",
+  causal_support: "Does the article support its cause-and-effect claims?",
+  context_completeness: "Is there enough important context?",
+  framing_uncertainty_separation: "Are reporting, interpretation, and uncertainty kept separate?",
 };
 
 const metricStatusLabels: Record<string, string> = {
-  present: "Clear",
-  partial: "Some gaps",
-  missing: "Missing",
-  not_applicable: "Not needed",
+  evidence_coverage: "Strong support",
+  source_traceability: "Clear",
+  causal_support: "Supported",
+  context_completeness: "Enough context",
+  framing_uncertainty_separation: "Clearly distinguished",
 };
 
 const issueLabels: Record<string, string> = {
-  selection_ambiguity: "Who the survey represents",
+  selection_ambiguity: "Unclear selection",
 };
 
 const articleParagraphs = [
-  "The Arbor City Library will keep its doors open until 8 p.m. on Saturdays after completing a six-month pilot of longer weekend hours.",
-  "Library records show an 18% increase in Saturday visits compared with the same six months last year. The records count entries but do not show why each visitor came to the building.",
-  "A survey offered to weekend visitors received 642 responses. Seventy-two percent of respondents said they wanted the extended schedule to continue, while 14% preferred the earlier closing time and the remainder had no preference.",
-  "Library director Elena Park said the attendance records and survey informed the decision. She also noted that a winter reading festival and three community workshops may have contributed to the increase.",
-  "The city council approved funding for two additional weekend staff shifts. The library estimates that the longer schedule will add $46,000 to annual staffing and utility costs.",
-  "Council member David Lin supported the funding but asked the library to publish quarterly attendance and cost figures. He said the decision should be revisited if visits return to their earlier level.",
-  "The visitor survey was voluntary and was offered only inside the library on Saturdays. People who already used the building on weekends may therefore be more likely to appear in the results than residents who did not visit.",
-  "The library will review attendance, staffing costs, and visitor feedback again after the schedule has been in place for one year. Officials said weekday hours will not change during that period.",
-  "The available records support that Saturday use rose during the pilot and that many surveyed visitors favored later hours. They do not establish that the schedule change alone caused the increase.",
+  "The Arbor City Library will make later Saturday hours permanent after a six-month pilot, extending service until 8 p.m. beginning next month.",
+  "The library board approved the schedule after reviewing pilot attendance, visitor feedback, and the cost of keeping the building open for three additional hours.",
+  "Library records show Saturday entries rose 18% during the pilot compared with the same six-month period last year. The entry counts show when people arrived, but not why attendance changed.",
+  "A voluntary survey offered inside the library on Saturdays received 642 responses. Seventy-two percent of respondents wanted the later hours to continue, 14% preferred the earlier closing time, and the rest expressed no preference.",
+  "Library director Elena Park said the attendance records and survey informed the recommendation. She said the data did not prove that longer hours alone caused the increase in visits.",
+  "The city council approved funding for two additional weekend staff shifts. The library estimates that the permanent schedule will add $46,000 in annual staffing and utility costs.",
+  "Park said later hours could make the library easier to use for residents who work during the day, while noting that the pilot did not measure visitors' work schedules.",
+  "The library said a winter reading festival, three community workshops, and seasonal changes may also have affected attendance. Because the survey reached only Saturday visitors, it did not capture the views of non-visitors or other residents.",
+  "Council member David Lin supported the funding but asked the library to publish quarterly attendance and cost figures. He said the schedule should be reconsidered if visits return to their earlier level.",
+  "The library will review attendance, staffing costs, and visitor feedback after one year. Officials said the pilot supports that visits rose while later hours were offered and that many surveyed visitors favored the schedule, but it does not establish that the schedule itself caused the increase.",
 ];
 
 const progressCopy = [
@@ -61,7 +63,7 @@ function BrowserArticle({ highlighted }: { highlighted: string[] }) {
       </nav>
       <article className="mock-article">
         <p className="article-section">Community</p>
-        <h1>City library extends weekend hours after six-month pilot</h1>
+        <h1>City library extends weekend hours</h1>
         <p className="article-dek">Attendance records and a visitor survey supported the change, while officials said seasonal events may also have influenced the results.</p>
         <p className="article-byline">By Maya Chen · July 18, 2026 · 5 min read</p>
         <div className="mini-library" aria-label="Stylized library reading room">
@@ -91,15 +93,15 @@ function ReadyPanel({ onAnalyze }: { onAnalyze: () => void }) {
       <div className="panel-modes"><span className="active">Full article</span><span>Selected text</span></div>
       <section className="source-card">
         <p className="panel-eyebrow">Detected source</p>
-        <h2>City library extends weekend hours after six-month pilot</h2>
-        <p>Maya Chen · 9 paragraphs</p>
+        <h2>City library extends weekend hours</h2>
+        <p>By Maya Chen · July 18, 2026 · 5 min read · 10 paragraphs</p>
       </section>
       <div className="panel-empty">
         <div className="lens-mark mini"><span /><span /></div>
         <h3>Inspect this article&apos;s reasoning</h3>
         <p>Examine its evidence, causal reasoning, context, and framing—without fact-checking.</p>
       </div>
-      <p className="demo-data-note">Demo mode uses a saved fixture. No article text is sent anywhere.</p>
+      <p className="demo-data-note">This demo loads a saved LedeLens result. It does not call the OpenAI API or send article text. The Chrome extension uses your OpenAI API key, sends extracted article text and metadata to OpenAI when you analyze, and OpenAI charges may apply.</p>
       <button className="analyze-button" type="button" onClick={onAnalyze}>Analyze article</button>
     </>
   );
@@ -119,24 +121,40 @@ function LoadingPanel({ step }: { step: number }) {
           </li>
         ))}
       </ol>
-      <p className="loading-note">This is a simulated workflow. No API key or network request is used.</p>
+      <p className="loading-note">This simulated analysis does not use an API key, call the OpenAI API, or send article text.</p>
     </div>
   );
 }
 
-function ResultsPanel({ onHighlight, onReset }: { onHighlight: (ids: string[]) => void; onReset: () => void }) {
+function ResultsPanel({ onHighlight, onAnalyze, onReset }: { onHighlight: (ids: string[]) => void; onAnalyze: () => void; onReset: () => void }) {
   return (
     <div className="results-panel">
+      <div className="panel-modes"><span className="active">Full article</span><span>Selected text</span></div>
+      <section className="source-card">
+        <p className="panel-eyebrow">Detected source</p>
+        <h2>City library extends weekend hours</h2>
+        <p>By Maya Chen · July 18, 2026 · 5 min read · 10 paragraphs</p>
+      </section>
+      <p className="demo-data-note">This demo loads a saved LedeLens result. It does not call the OpenAI API or send article text. The Chrome extension uses your OpenAI API key, sends extracted article text and metadata to OpenAI when you analyze, and OpenAI charges may apply.</p>
+      <button className="analyze-button" type="button" onClick={onAnalyze}>Re-analyze article</button>
+      <p className="demo-data-note">Saved result timing: OpenAI first output 2.2s · total 7.3s · 0 reasoning tokens.</p>
       <section className="overall-card">
-        <p className="panel-eyebrow">Overall finding</p>
+        <p className="panel-eyebrow">How well does this article support its main takeaway?</p>
         <div className="overall-rating">
           <StatusDot />
           <strong>Well supported</strong>
           <button className="rating-help" type="button" aria-label="About this rating" aria-describedby="rating-explainer">?</button>
-          <span id="rating-explainer" className="rating-tooltip" role="tooltip">The article&apos;s main takeaway is well supported by material presented within the article, with only minor limitations.</span>
+          <span id="rating-explainer" className="rating-tooltip" role="tooltip">The article presents strong support for its main takeaway.</span>
+        </div>
+        <p>The article presents strong support for its main takeaway.</p>
+        <p>This looks only at support presented in the article. It does not check whether the reported claims are true.</p>
+        <div className="style-row">
+          <span>Presentation style</span>
+          <strong>Restrained</strong>
+          <button className="rating-help" type="button" aria-label="About presentation style" aria-describedby="style-explainer">?</button>
+          <span id="style-explainer" className="rating-tooltip" role="tooltip">Presentation style describes how the article is written, not whether it is true.</span>
         </div>
         <p>{analysis.structural_assessment.one_sentence}</p>
-        <div className="style-row"><span>Presentation style</span><strong>Restrained</strong></div>
       </section>
 
       <section className="result-section conclusion-card">
@@ -145,13 +163,13 @@ function ResultsPanel({ onHighlight, onReset }: { onHighlight: (ids: string[]) =
       </section>
 
       <section className="result-section">
-        <div className="section-title-row"><h2>Five questions to ask</h2><span>4 clear · 1 not needed</span></div>
+        <div className="section-title-row"><h2>Five questions to ask</h2><span>5 strong</span></div>
         <div className="metric-list">
           {Object.entries(analysis.article_metrics).map(([name, metric]) => (
             <article className="metric-card" key={name}>
               <div className="metric-heading">
                 <h3>{metricLabels[name]}</h3>
-                <span className={`metric-status ${metric.status}`}><StatusDot />{metricStatusLabels[metric.status]}</span>
+                <span className={`metric-status ${metric.status}`}><StatusDot />{metricStatusLabels[name]}</span>
               </div>
               <p>{metric.rationale}</p>
               <div className="paragraph-links">
@@ -170,7 +188,7 @@ function ResultsPanel({ onHighlight, onReset }: { onHighlight: (ids: string[]) =
           <article className="issue-card" key={issue.type}>
             <div className="metric-heading">
               <h3>{issueLabels[issue.type]}</h3>
-              <span className="severity low">Low</span>
+              <span className={`severity ${issue.severity}`}>{issue.severity === "medium" ? "Medium" : "Low"}</span>
             </div>
             <p>{issue.description}</p>
             <div className="paragraph-links">
@@ -183,8 +201,9 @@ function ResultsPanel({ onHighlight, onReset }: { onHighlight: (ids: string[]) =
       </section>
 
       <div className="result-disclaimer">
-        <strong>DISCLAIMER:</strong> LedeLens evaluates internal support and presentation. It does not fact-check the article or judge its viewpoint.
+        <strong>DISCLAIMER:</strong> LedeLens looks at how well an article supports its conclusions and separates reporting from interpretation. It does not fact-check the article or judge its political viewpoint.
       </div>
+      <p className="demo-data-note">Schema 0.2.0</p>
       <button className="reset-button" type="button" onClick={onReset}>Replay demo</button>
     </div>
   );
@@ -224,6 +243,11 @@ export default function DemoExperience() {
     setStage("ready");
   };
 
+  const startAnalysis = () => {
+    setStep(0);
+    setStage("loading");
+  };
+
   return (
     <main className="demo-shell">
       <header className="demo-header">
@@ -240,9 +264,9 @@ export default function DemoExperience() {
         <p>LedeLens helps readers inspect evidence, sourcing, cause and effect, context, and framing—without fact-checking or political bias ratings.</p>
         <button type="button" onClick={openDemo}>Try the interactive demo <span>↓</span></button>
         <div className="intro-proof">
-          <span><StatusDot /> No API key needed</span>
+          <span><StatusDot /> Saved demo result · no API key used</span>
           <span><StatusDot /> Fictional article</span>
-          <span><StatusDot /> Real LedeLens schema</span>
+          <span><StatusDot /> Saved LedeLens result</span>
         </div>
       </section>
 
@@ -276,9 +300,9 @@ export default function DemoExperience() {
                   <button type="button" aria-label="Close side panel" onClick={() => setStage("closed")}>×</button>
                 </header>
                 <div className="panel-scroll">
-                  {stage === "ready" && <ReadyPanel onAnalyze={() => { setStep(0); setStage("loading"); }} />}
+                  {stage === "ready" && <ReadyPanel onAnalyze={startAnalysis} />}
                   {stage === "loading" && <LoadingPanel step={step} />}
-                  {stage === "complete" && <ResultsPanel onHighlight={highlightParagraphs} onReset={resetDemo} />}
+                  {stage === "complete" && <ResultsPanel onHighlight={highlightParagraphs} onAnalyze={startAnalysis} onReset={resetDemo} />}
                 </div>
               </aside>
             )}
@@ -301,7 +325,7 @@ export default function DemoExperience() {
 
       <footer className="demo-footer">
         <span>© 2026 LedeLens</span>
-        <span>This demo uses fictional content and a saved analysis fixture. No API request is made.</span>
+        <span>This saved-result demo does not call the OpenAI API or send article text.</span>
       </footer>
     </main>
   );
