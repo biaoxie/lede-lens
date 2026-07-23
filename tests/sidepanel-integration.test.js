@@ -120,6 +120,13 @@ test("interactive controls expose keyboard, status, and reduced-motion semantics
   assert.match(panelStyles, /\.paragraph-link \{[\s\S]*?min-height: 32px;/);
 });
 
+test("each retry announces the initial progress stage again", () => {
+  assert.match(
+    panelSource,
+    /function startProgress\(\) \{\s+clearProgressTimers\(\);\s+activeProgressStep = null;/,
+  );
+});
+
 test("renders recovery errors as focusable alerts with collapsed diagnostics", () => {
   assert.match(
     panelMarkup,

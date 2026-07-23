@@ -303,6 +303,7 @@ function setProgress(step, title, detail) {
 
 function startProgress() {
   clearProgressTimers();
+  activeProgressStep = null;
   progressStartedAt = Date.now();
   elements.progress.hidden = false;
   elements.progress.classList.remove("failed", "cancelled");
