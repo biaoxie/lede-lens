@@ -113,7 +113,14 @@ button { color: inherit; }
   background: white;
 }
 
-.store-link {
+.demo-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.store-link,
+.github-link {
   display: inline-flex;
   align-items: center;
   gap: 9px;
@@ -127,7 +134,13 @@ button { color: inherit; }
   transition: background .2s ease, transform .2s ease;
 }
 
-.store-link:hover {
+.github-link {
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.store-link:hover,
+.github-link:hover {
   background: var(--paper);
   transform: translateY(-1px);
 }
@@ -1186,6 +1199,17 @@ button { color: inherit; }
   font-size: 10px;
 }
 
+.demo-footer a {
+  color: #fffdf8;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.demo-footer a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 @media (max-width: 960px) {
   .lede-panel {
     width: 390px;
@@ -1211,7 +1235,12 @@ button { color: inherit; }
   }
 
   .demo-brand small { display: none; }
-  .store-link { padding: 9px 12px; font-size: 10px; }
+  .demo-actions { gap: 4px; }
+  .store-link,
+  .github-link { padding: 9px 10px; font-size: 10px; }
+  .github-link { font-size: 0; }
+  .github-link::before { font-size: 10px; content: "GitHub"; }
+  .github-link span { font-size: 10px; }
 
   .demo-intro {
     margin-top: 48px;
