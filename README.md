@@ -71,7 +71,7 @@ Long-running model requests execute in the open side panel rather than the Manif
 Requirements:
 
 - Google Chrome 116 or newer
-- Node.js 20 or newer for local verification
+- Node.js 24 or newer for local verification
 - An OpenAI API key for live analysis
 
 Install dependencies and run the repository checks:

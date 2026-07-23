@@ -11,7 +11,7 @@
     "verify": "npm run check && npm run test:coverage"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "license": "Apache-2.0",
   "dependencies": {
