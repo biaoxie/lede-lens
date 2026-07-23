@@ -56,6 +56,10 @@ test("ships a complete, static analysis fixture and social card", async () => {
     new URL("../app/DemoExperience.tsx", import.meta.url),
     "utf8",
   );
+  const stylesheetSource = await readFile(
+    new URL("../app/globals.css", import.meta.url),
+    "utf8",
+  );
   const fixture = JSON.parse(
     await readFile(new URL("../app/fixtures/library-analysis.json", import.meta.url), "utf8"),
   );
@@ -108,5 +112,13 @@ test("ships a complete, static analysis fixture and social card", async () => {
   assert.match(componentSource, /OpenAI total 8\.7s/);
   assert.match(componentSource, /OpenAI total 12\.0s/);
   assert.match(componentSource, /Schema 0\.2\.0/);
+  assert.match(
+    stylesheetSource,
+    /\.article-viewport\s*\{[^}]*\bisolation:\s*isolate;/s,
+  );
+  assert.match(
+    stylesheetSource,
+    /\.lede-panel\s*\{[^}]*\bz-index:\s*1;/s,
+  );
   await access(new URL("../public/og.png", import.meta.url));
 });
