@@ -8,27 +8,27 @@
   "article_metrics": {
     "evidence_coverage": {
       "status": "present",
-      "rationale": "The article supports the decision with attendance records, survey results, funding details, and an explicit note about what those records do and do not show.",
-      "paragraph_ids": ["p2", "p3", "p4", "p5", "p6", "p10"]
+      "rationale": "The article supports the decision with attendance figures, survey results, board action, and stated costs, and it ties those materials directly to the permanent hours change.",
+      "paragraph_ids": ["p1", "p2", "p3", "p4", "p6", "p10"]
     },
     "source_traceability": {
       "status": "present",
-      "rationale": "Readers can tell which points come from library records, the visitor survey, officials, and a council member.",
-      "paragraph_ids": ["p3", "p4", "p5", "p7", "p9"]
+      "rationale": "Readers can tell what comes from library records, the survey, officials, the council, and the library director.",
+      "paragraph_ids": ["p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10"]
     },
     "causal_support": {
       "status": "present",
-      "rationale": "The article does not overclaim why visits increased; it explicitly says the longer hours alone are not proven to be the cause and notes possible other factors.",
+      "rationale": "The article does not overclaim that later hours caused higher attendance; it repeatedly says the pilot showed visits rose during the period but did not prove the reason.",
       "paragraph_ids": ["p3", "p5", "p8", "p10"]
     },
     "context_completeness": {
       "status": "present",
-      "rationale": "It includes key context that could change the reader's view, especially the survey's built-in bias risk, possible seasonal effects, costs, and a planned review.",
-      "paragraph_ids": ["p5", "p6", "p8", "p9", "p10"]
+      "rationale": "It includes key limits that could change interpretation, such as other events affecting attendance and the survey reaching only Saturday visitors.",
+      "paragraph_ids": ["p4", "p8", "p10"]
     },
     "framing_uncertainty_separation": {
       "status": "present",
-      "rationale": "Reported facts, source statements, and limits are kept distinct, with uncertainty clearly stated rather than blurred into certainty.",
+      "rationale": "Observed numbers, source statements, and uncertainty are kept distinct, especially around what the data can and cannot show.",
       "paragraph_ids": ["p3", "p5", "p7", "p8", "p10"]
     }
   },
@@ -36,14 +36,14 @@
     {
       "type": "selection_ambiguity",
       "severity": "medium",
-      "description": "The survey reflects only people who were already in the library on Saturdays, so it cannot show what non-visitors or other residents wanted.",
+      "description": "The survey reflects only people who were already at the library on Saturdays, so it cannot show what non-visitors or the broader public want.",
       "paragraph_ids": ["p4", "p8"]
     }
   ],
-  "bounded_conclusion": "If the article's reported facts are accurate, the library decided to keep Saturday hours open until 8 p.m. after a six-month pilot in which recorded Saturday entries rose compared with the same period last year, many surveyed Saturday visitors said they wanted the later hours to continue, and the city council approved added funding. The article supports only the narrower point that these factors informed the decision, not that longer hours by themselves caused the increase in visits.",
+  "bounded_conclusion": "If the reported information is accurate, the article supports that Arbor City Library made later Saturday hours permanent after a six-month pilot, citing higher Saturday entries during that period, favorable responses from surveyed Saturday visitors, and identified added costs, while also stating that these materials do not show that longer hours alone caused the attendance increase.",
   "structural_assessment": {
     "evidence_structure": "structurally_solid",
     "presentation_style": "restrained",
-    "one_sentence": "The article stays close to what its records, survey, and named officials actually support, while clearly marking the main limits."
+    "one_sentence": "The article stays close to what its records, survey, and officials can support, and it clearly marks the main uncertainty about whether later hours caused the attendance increase."
   }
 }

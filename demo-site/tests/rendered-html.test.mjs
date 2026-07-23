@@ -76,6 +76,14 @@ test("ships a complete, static analysis fixture and social card", async () => {
   ]);
   assert.equal(fixture.issues.length, 1);
   assert.equal(fixture.issues[0].severity, "medium");
+  assert.equal(
+    fixture.article_metrics.context_completeness.rationale,
+    "It includes key limits that could change interpretation, such as other events affecting attendance and the survey reaching only Saturday visitors.",
+  );
+  assert.equal(
+    fixture.article_metrics.framing_uncertainty_separation.rationale,
+    "Observed numbers, source statements, and uncertainty are kept distinct, especially around what the data can and cannot show.",
+  );
   assert.equal(wasteFramingFixture.schema_version, "0.2.0");
   assert.equal(wasteFramingFixture.structural_assessment.evidence_structure, "evidence_limited");
   assert.equal(wasteFramingFixture.structural_assessment.presentation_style, "framing_heavy");
@@ -97,7 +105,7 @@ test("ships a complete, static analysis fixture and social card", async () => {
   assert.match(componentSource, /City wastes \$46,000 a year on library hours/);
   assert.match(componentSource, /Same reported facts\. Different framing\./);
   assert.match(componentSource, /10 paragraphs/);
-  assert.match(componentSource, /OpenAI first output 2\.2s · total 7\.3s · 0 reasoning tokens/);
+  assert.match(componentSource, /OpenAI total 8\.7s/);
   assert.match(componentSource, /OpenAI total 12\.0s/);
   assert.match(componentSource, /Schema 0\.2\.0/);
   await access(new URL("../public/og.png", import.meta.url));

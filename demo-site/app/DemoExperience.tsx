@@ -67,7 +67,7 @@ const articles = {
     title: "City library extends weekend hours",
     dek: "Attendance records and a visitor survey supported the change, while officials said seasonal events may also have influenced the results.",
     analysis: restrainedAnalysis,
-    timing: "OpenAI first output 2.2s · total 7.3s · 0 reasoning tokens",
+    timing: "OpenAI total 8.7s",
     paragraphs: [
       "The Arbor City Library will make later Saturday hours permanent after a six-month pilot, extending service until 8 p.m. beginning next month.",
       "The library board approved the schedule after reviewing pilot attendance, visitor feedback, and the cost of keeping the building open for three additional hours.",
