@@ -6,7 +6,11 @@ LedeLens is an open-source Chrome extension that shows whether an article's conc
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 ![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4)
-[Chrome Web Store](https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei)
+![Chrome Web Store: Under review](https://img.shields.io/badge/Chrome%20Web%20Store-Under%20review-F9AB00)
+
+> **[Try the interactive LedeLens demo](https://ledelens-article-demo.biaoxie425.chatgpt.site)** — explore a saved analysis of a fictional article without an API key.
+>
+> **Chrome extension:** Under review in the Chrome Web Store. Until it is approved, follow the [Quick Start](quick-start.md) to install it locally.
 
 ![LedeLens analyzing a fictional city-library article beside the source page](docs/assets/lede-lens-hero.webp)
 
@@ -80,7 +84,7 @@ For installation details, selected-text analysis, cached reports, and troublesho
 
 ## Project status
 
-LedeLens is an early proof of concept installed as an unpacked Chrome extension. The current provider integration supports OpenAI; the analysis contract itself remains provider-neutral. API usage may incur OpenAI charges, and extraction can be incomplete on paywalled pages, protected browser pages, or sites that render article text inside inaccessible frames.
+LedeLens is under review in the Chrome Web Store and can currently be installed locally as an unpacked extension. The current provider integration supports OpenAI; the analysis contract itself remains provider-neutral. API usage may incur OpenAI charges, and extraction can be incomplete on paywalled pages, protected browser pages, or sites that render article text inside inaccessible frames.
 
 ## How it works
 
