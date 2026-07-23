@@ -105,3 +105,27 @@ test("interactive controls expose keyboard, status, and reduced-motion semantics
   assert.match(panelStyles, /\.rating-help-button \{[\s\S]*?width: 32px;[\s\S]*?height: 32px;/);
   assert.match(panelStyles, /\.paragraph-link \{[\s\S]*?min-height: 32px;/);
 });
+
+test("renders recovery errors as focusable alerts with collapsed diagnostics", () => {
+  assert.match(
+    panelMarkup,
+    /id="error-state"[^>]*role="alert"[^>]*tabindex="-1"[^>]*hidden/,
+  );
+  assert.match(panelMarkup, /id="error-action"/);
+  assert.match(panelMarkup, /<details id="error-technical" class="technical-details">/);
+  assert.doesNotMatch(panelMarkup, /<details[^>]*\sopen(?:\s|>)/);
+  assert.match(panelSource, /elements\.errorState\.focus\(\)/);
+});
+
+test("uses observable progress labels and keeps a visible cancel action", () => {
+  for (const label of [
+    "Reading page",
+    "Analyzing structure",
+    "Checking report",
+    "Preparing results",
+  ]) {
+    assert.match(panelMarkup, new RegExp(label));
+  }
+  assert.match(panelMarkup, />Cancel analysis<\/button>/);
+  assert.doesNotMatch(panelSource, /model is reasoning|Deeper reasoning may take longer/);
+});

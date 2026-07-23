@@ -108,20 +108,34 @@
           <div class="progress-heading">
             <span class="spinner" aria-hidden="true"></span>
             <div>
-              <strong id="progress-title">Reading the article</strong>
+              <strong id="progress-title">Reading page</strong>
               <span id="progress-elapsed" aria-hidden="true">0:00</span>
             </div>
           </div>
           <p id="progress-detail">Finding the main article and preserving source links.</p>
           <ol class="progress-steps" aria-label="Analysis progress">
-            <li data-progress-step="extract">Extract source</li>
-            <li data-progress-step="analyze">Analyze structure</li>
-            <li data-progress-step="validate">Validate report</li>
-            <li data-progress-step="render">Render findings</li>
+            <li data-progress-step="extract">Reading page</li>
+            <li data-progress-step="analyze">Analyzing structure</li>
+            <li data-progress-step="validate">Checking report</li>
+            <li data-progress-step="render">Preparing results</li>
           </ol>
           <button id="cancel-analysis" class="quiet small cancel-analysis" type="button">Cancel analysis</button>
         </div>
+        <section id="error-state" class="error-state" role="alert" tabindex="-1" hidden>
+          <p class="eyebrow">Analysis not saved</p>
+          <h2 id="error-title"></h2>
+          <p id="error-description"></p>
+          <button id="error-action" class="primary small" type="button">Try again</button>
+          <details id="error-technical" class="technical-details">
+            <summary>Technical details</summary>
+            <dl id="error-technical-list"></dl>
+          </details>
+        </section>
         <p id="message" class="message" role="status" aria-live="polite"></p>
+        <details id="analysis-technical" class="technical-details" hidden>
+          <summary>Technical details</summary>
+          <dl id="analysis-technical-list"></dl>
+        </details>
       </section>
 
       <section id="results" hidden></section>

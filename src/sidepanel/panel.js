@@ -20,6 +20,12 @@ import {
   getReportProvenance,
   savedReportCountLabel,
 } from "../lib/ui-state.js";
+import {
+  completedDuration,
+  errorPresentation,
+  progressEventKey,
+  technicalDetailRows,
+} from "../lib/analysis-flow.js";
 
 const state = {
   mode: "article",
@@ -47,6 +53,11 @@ const elements = {
   clearKey: document.querySelector("#clear-key"),
   cancelAnalysis: document.querySelector("#cancel-analysis"),
   dataDisclosure: document.querySelector("#data-disclosure"),
+  errorAction: document.querySelector("#error-action"),
+  errorDescription: document.querySelector("#error-description"),
+  errorState: document.querySelector("#error-state"),
+  errorTechnicalList: document.querySelector("#error-technical-list"),
+  errorTitle: document.querySelector("#error-title"),
   emptyDescription: document.querySelector("#empty-description"),
   emptyState: document.querySelector("#empty-state"),
   emptyTitle: document.querySelector("#empty-title"),
@@ -64,6 +75,8 @@ const elements = {
   progressDetail: document.querySelector("#progress-detail"),
   progressElapsed: document.querySelector("#progress-elapsed"),
   progressTitle: document.querySelector("#progress-title"),
+  analysisTechnical: document.querySelector("#analysis-technical"),
+  analysisTechnicalList: document.querySelector("#analysis-technical-list"),
   results: document.querySelector("#results"),
   saveSettings: document.querySelector("#save-settings"),
   savedReportCount: document.querySelector("#saved-report-count"),
@@ -101,6 +114,7 @@ let activeProgressStep = null;
 let refreshTimer;
 let ratingHelpId = 0;
 let settingsReturnFocus = null;
+let currentErrorAction = "retry";
 
 function stopActiveAnalysis(reason = "page_changed", { invalidate = true } = {}) {
   const operation = state.activeAnalysis;
@@ -126,6 +140,46 @@ function setMessage(text = "", isError = false) {
   elements.message.classList.toggle("error", isError);
   elements.message.setAttribute("role", isError ? "alert" : "status");
   elements.message.setAttribute("aria-live", isError ? "assertive" : "polite");
+}
+
+function renderTechnicalDetails(list, context) {
+  const rows = technicalDetailRows(context);
+  list.replaceChildren(...rows.flatMap(([label, value]) => {
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const description = document.createElement("dd");
+    description.textContent = value;
+    return [term, description];
+  }));
+}
+
+function clearErrorState() {
+  elements.errorState.hidden = true;
+  elements.errorState.classList.remove("cancelled");
+}
+
+function showAnalysisError(error) {
+  const presentation = errorPresentation(error);
+  currentErrorAction = presentation.action.type;
+  elements.errorTitle.textContent = presentation.title;
+  elements.errorDescription.textContent = presentation.description;
+  elements.errorAction.textContent = presentation.action.label;
+  elements.errorState.classList.toggle("cancelled", presentation.category === "cancelled");
+  renderTechnicalDetails(elements.errorTechnicalList, {
+    error,
+    model: state.settings?.model,
+  });
+  elements.errorState.hidden = false;
+  elements.errorState.focus();
+}
+
+function showAnalysisDiagnostics({ diagnostics, requestId }) {
+  renderTechnicalDetails(elements.analysisTechnicalList, {
+    diagnostics,
+    requestId,
+    model: state.settings?.model,
+  });
+  elements.analysisTechnical.hidden = false;
 }
 
 function defaultAnalyzeLabel() {
@@ -196,6 +250,8 @@ function resetPageUi({ needsAccess = false } = {}) {
   elements.articlePreview.hidden = true;
   elements.extractionWarning.hidden = true;
   elements.results.hidden = true;
+  elements.analysisTechnical.hidden = true;
+  clearErrorState();
   elements.emptyState.hidden = false;
   elements.checkSelection.hidden = true;
   updateDisclosure();
@@ -231,20 +287,6 @@ function formatElapsed(milliseconds) {
   return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, "0")}`;
 }
 
-function formatSeconds(milliseconds) {
-  return Number.isFinite(milliseconds) ? `${(milliseconds / 1000).toFixed(1)}s` : "not reported";
-}
-
-function formatDiagnostics(diagnostics) {
-  const reasoningTokens = diagnostics?.usage?.output_tokens_details?.reasoning_tokens;
-  const parts = [
-    `first output ${formatSeconds(diagnostics?.timeToFirstOutputMs)}`,
-    `total ${formatSeconds(diagnostics?.totalMs)}`,
-  ];
-  if (Number.isFinite(reasoningTokens)) parts.push(`${reasoningTokens} reasoning tokens`);
-  return `OpenAI timing: ${parts.join(" · ")}.`;
-}
-
 function setProgress(step, title, detail) {
   const stageChanged = activeProgressStep !== step;
   activeProgressStep = step;
@@ -264,8 +306,10 @@ function startProgress() {
   progressStartedAt = Date.now();
   elements.progress.hidden = false;
   elements.progress.classList.remove("failed", "cancelled");
+  elements.analysisTechnical.hidden = true;
+  clearErrorState();
   elements.progressElapsed.textContent = "0:00";
-  setProgress("extract", "Reading the article", "Finding the main article and preserving source links.");
+  setProgress("extract", "Reading page", "Finding article text and preserving links to its paragraphs.");
   progressInterval = setInterval(() => {
     elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
   }, 1000);
@@ -273,10 +317,10 @@ function startProgress() {
 
 function narrateModelWait(paragraphCount) {
   const updates = [
-    [6_000, `OpenAI is working through ${paragraphCount} source paragraphs. This can take a minute.`],
-    [16_000, "Still working—checking evidence, causal reasoning, and missing context."],
-    [32_000, "Still working. Deeper reasoning may take longer; LedeLens has not timed out."],
-    [60_000, "Waiting for OpenAI to finish the structured report. You can keep reading this tab."],
+    [6_000, `OpenAI accepted ${paragraphCount} source paragraphs and is preparing a response.`],
+    [16_000, "The analysis is still in progress."],
+    [32_000, "Longer articles and some models may take more time."],
+    [60_000, "Still waiting for OpenAI to finish the report. You can keep reading this tab."],
   ];
   narrativeTimers = updates.map(([delay, detail]) => setTimeout(() => {
     if (activeProgressStep === "analyze") elements.progressDetail.textContent = detail;
@@ -289,8 +333,8 @@ function completeProgress() {
     element.classList.add("complete");
     element.classList.remove("active");
   });
-  elements.progressTitle.textContent = "Analysis ready";
-  elements.progressDetail.textContent = "The report passed local validation and is ready to review.";
+  elements.progressTitle.textContent = "Results ready";
+  elements.progressDetail.textContent = "The report passed local checks and is ready to review.";
   elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
   elements.progressAnnouncement.textContent = "Analysis ready";
   setTimeout(() => {
@@ -487,7 +531,7 @@ async function refreshCurrentPage() {
       showAccessPrompt();
     } else {
       resetPageUi();
-      setMessage(error.message, true);
+      showAnalysisError(error);
     }
   }
 }
@@ -776,20 +820,22 @@ async function analyze() {
     if (!isCurrentAnalysis(operation)) return;
     setProgress(
       "analyze",
-      "Analyzing article structure",
-      `Prepared ${article.paragraphs.length} source paragraphs and sending them to OpenAI.`,
+      "Analyzing structure",
+      `Sending ${article.paragraphs.length} source paragraphs to OpenAI.`,
     );
     narrateModelWait(article.paragraphs.length);
-    const { result, diagnostics } = await analyzeArticle(article, ({ type, eventType, elapsedMs }) => {
+    let lastProgressEvent = null;
+    const { result, diagnostics, requestId } = await analyzeArticle(article, ({ type, eventType }) => {
       if (!isCurrentAnalysis(operation)) return;
-      if (type === "response_started") {
-        setProgress("analyze", "OpenAI accepted the request", "The live response stream is connected. The model is reasoning and preparing the report.");
-      } else if (type === "first_output") {
-        setProgress("analyze", "Receiving the structured report", `OpenAI began returning the report after ${formatSeconds(elapsedMs)}.`);
-      } else if (type === "stream_event" && eventType === "response.output_text.delta") {
-        setProgress("analyze", "Receiving the structured report", "OpenAI is streaming the analysis back to LedeLens.");
-      } else if (type === "validating") {
-        setProgress("validate", "Validating every reference", "Checking the schema, metrics, issues, and paragraph references.");
+      const eventKey = progressEventKey({ type, eventType });
+      if (!eventKey || eventKey === lastProgressEvent) return;
+      lastProgressEvent = eventKey;
+      if (eventKey === "response_started") {
+        setProgress("analyze", "Analyzing structure", "OpenAI accepted the request and is preparing a response.");
+      } else if (eventKey === "first_output" || eventKey === "output_delta") {
+        setProgress("analyze", "Analyzing structure", "OpenAI has started returning the report.");
+      } else if (eventKey === "validating") {
+        setProgress("validate", "Checking report", "Checking the report format, metrics, issues, and paragraph links.");
       }
     }, { signal: operation.controller.signal });
     if (!isCurrentAnalysis(operation)) return;
@@ -821,7 +867,7 @@ async function analyze() {
       cacheWarning = "Analysis ready, but Chrome could not save it for this page.";
     }
     if (!isCurrentAnalysis(operation)) return;
-    setProgress("render", "Building the report", "Organizing the assessment, metrics, issues, and source links.");
+    setProgress("render", "Preparing results", "Organizing the assessment, metrics, issues, and source links.");
     state.report = {
       source: "fresh",
       savedAt,
@@ -830,20 +876,17 @@ async function analyze() {
     renderResults(result, state.report);
     updateAnalyzeUi();
     completeProgress();
-    setMessage(cacheWarning || formatDiagnostics(diagnostics));
+    setMessage(`${completedDuration(diagnostics)}${cacheWarning ? ` ${cacheWarning}` : ""}`);
+    showAnalysisDiagnostics({ diagnostics, requestId });
   } catch (error) {
     if (state.activeAnalysis !== operation || analysisRevision !== state.pageRevision) return;
     if (error?.category === "cancelled") {
       cancelProgress(error.details?.reason);
-      setMessage(
-        error.details?.reason === "page_changed"
-          ? "Analysis stopped because you changed pages."
-          : "Analysis cancelled. No report was saved.",
-      );
     } else {
       failProgress();
-      setMessage(error.message, true);
     }
+    setMessage("");
+    showAnalysisError(error);
     if (!getConnectionState(state.settings || {}).canAnalyze) setSettingsOpen(true);
   } finally {
     if (state.activeAnalysis === operation) {
@@ -864,7 +907,7 @@ function setMode(mode, { focus = false } = {}) {
     candidate.tabIndex = selected ? 0 : -1;
     if (selected && focus) candidate.focus();
   });
-  refreshCurrentPage().then(() => {
+  return refreshCurrentPage().then(() => {
     if (stopped) setMessage("Analysis stopped because you changed the analysis source.");
   });
 }
@@ -994,6 +1037,22 @@ elements.cancelAnalysis.addEventListener("click", () => {
   cancelProgress("user_cancelled");
   setMessage("Analysis cancelled. No report was saved.");
   stopAnalysisOperation(operation, "user_cancelled");
+});
+elements.errorAction.addEventListener("click", async () => {
+  if (currentErrorAction === "settings") {
+    setSettingsOpen(true);
+    elements.apiKey.focus();
+    return;
+  }
+  if (currentErrorAction === "selection") {
+    await setMode("selection", { focus: true });
+    clearErrorState();
+    setMessage("Select a passage on the page, then choose Analyze selected text.");
+    elements.analyze.focus();
+    return;
+  }
+  clearErrorState();
+  analyze();
 });
 
 chrome.runtime.onMessage.addListener((message) => {
