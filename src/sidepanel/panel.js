@@ -177,7 +177,7 @@ function startProgress() {
   clearProgressTimers();
   progressStartedAt = Date.now();
   elements.progress.hidden = false;
-  elements.progress.classList.remove("failed");
+  elements.progress.classList.remove("failed", "cancelled");
   elements.progressElapsed.textContent = "0:00";
   setProgress("extract", "Reading the article", "Finding the main article and preserving source links.");
   progressInterval = setInterval(() => {
@@ -213,9 +213,21 @@ function completeProgress() {
 
 function failProgress() {
   clearProgressTimers();
+  elements.progress.classList.remove("cancelled");
   elements.progress.classList.add("failed");
   elements.progressTitle.textContent = "Analysis stopped";
   elements.progressDetail.textContent = "See the error below. Your article page was not changed.";
+  elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
+}
+
+function cancelProgress(reason = "user_cancelled") {
+  clearProgressTimers();
+  elements.progress.classList.remove("failed");
+  elements.progress.classList.add("cancelled");
+  elements.progressTitle.textContent = "Analysis stopped";
+  elements.progressDetail.textContent = reason === "page_changed"
+    ? "Analysis stopped because you changed pages."
+    : "You cancelled the analysis. No report was saved.";
   elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
 }
 
@@ -612,14 +624,15 @@ async function analyze() {
     setMessage(cacheWarning || formatDiagnostics(diagnostics));
   } catch (error) {
     if (state.activeAnalysis !== operation || analysisRevision !== state.pageRevision) return;
-    failProgress();
     if (error?.category === "cancelled") {
+      cancelProgress(error.details?.reason);
       setMessage(
         error.details?.reason === "page_changed"
           ? "Analysis stopped because you changed pages."
           : "Analysis cancelled. No report was saved.",
       );
     } else {
+      failProgress();
       setMessage(error.message, true);
     }
     if (!state.settings?.hasApiKey) elements.settings.hidden = false;
@@ -695,6 +708,8 @@ elements.analyze.addEventListener("click", analyze);
 elements.cancelAnalysis.addEventListener("click", () => {
   const operation = state.activeAnalysis;
   if (!operation || operation.controller.signal.aborted) return;
+  cancelProgress("user_cancelled");
+  setMessage("Analysis cancelled. No report was saved.");
   stopAnalysisOperation(operation, "user_cancelled");
 });
 
