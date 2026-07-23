@@ -8,7 +8,7 @@ LedeLens is an open-source Chrome extension that shows whether an article's conc
 ![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4)
 ![Chrome Web Store: Under review](https://img.shields.io/badge/Chrome%20Web%20Store-Under%20review-F9AB00)
 
-> **[Try the interactive LedeLens demo](https://ledelens.app)** — explore a saved analysis of a fictional article without an API key.
+> **Interactive demo: [ledelens.app](https://ledelens.app)** — explore a saved analysis of a fictional article without an API key.
 >
 > **Chrome extension:** Under review in the Chrome Web Store. Until it is approved, follow the [Quick Start](quick-start.md) to install it locally.
 
