@@ -1,103 +1,156 @@
 # LedeLens
 
-LedeLens is an open-source Chrome extension that audits the internal reasoning structure of news articles. It examines evidence, causal and predictive moves, missing context, and the separation between reporting and framing.
+**Read the reasoning behind the headline.**
 
-It does **not** fact-check the article. Its core question is narrower:
+LedeLens is an open-source Chrome extension that shows whether a news article's conclusions follow from the evidence it presents—without fact-checking the article or judging its political viewpoint.
 
-> Assuming the reported facts are accurate, how well do they support the article's conclusions?
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4)
 
-## What it shows
+![LedeLens analyzing a fictional city-library article beside the news page](docs/assets/lede-lens-hero.webp)
 
-- Five reader-focused questions about support, sourcing, causality, missing context, and the separation of facts from interpretation
-- Up to three material issues such as unsupported causation, missing baselines, one-sided sourcing, or certainty inflation
-- The strongest conclusion the article can support on its own terms
-- A bounded evidence-structure verdict and presentation-style label
-- Paragraph links that scroll back to the corresponding source text
+> **Scope:** LedeLens examines internal support, sourcing, cause and effect, missing context, and the separation of reporting from interpretation. Its findings are reading aids—not verdicts on truth, credibility, fairness, or intent.
 
-## Current status
+Its guiding question is intentionally narrow:
 
-LedeLens is an early proof of concept. The first release:
+> Assuming the reported material is accurate, how well does the article support its conclusions?
 
-- runs as a Chrome Manifest V3 side panel;
-- analyzes a full article or selected text;
-- calls the OpenAI Responses API directly from the persistent side panel;
-- lists the compatible GPT-5 models available to the user's OpenAI API key and requires an explicit selection;
-- stores the OpenAI API key in `chrome.storage.session`, which Chrome clears when the browser session ends;
-- saves up to 30 successful page analyses in local extension storage and restores them when the same article content is opened again;
-- validates every model result locally against JSON Schema before rendering it.
+## Why LedeLens?
 
-See [quick-start.md](quick-start.md) to load the extension locally.
+An article can report accurate facts and still reach beyond what those facts support. LedeLens helps readers notice that gap without asking them to agree with a particular political viewpoint.
 
-## Product boundaries
+## What you will learn
 
-LedeLens evaluates article structure, not factual truth. It assesses whether an article's important conclusions stay within its own evidence, whether causal language is internally supported, which context is missing, and what conclusion would follow if the reported material were accurate.
+For each analysis, LedeLens gives readers:
 
-It does not verify events, source credibility, linked documents, statistics, or author intent. `manipulation_risk_signals` describes observable textual patterns; it is never a claim that an author intended to manipulate readers.
+- **A clear overall finding** — from **Structurally solid** to **Severely under-supported**
+- **Five practical questions** — covering evidence, sourcing, causality, context, and the separation of fact from interpretation
+- **What to watch** — up to three material weaknesses, such as unsupported causation, missing baselines, one-sided sourcing, or certainty inflation
+- **A bounded conclusion** — the strongest conclusion the article can support on its own terms
+- **Source-linked explanations** — paragraph badges that return to and highlight the relevant passage
 
-## Architecture
+Analyze the full article or select a specific passage. Reports appear in Chrome's side panel, alongside the page you are reading.
 
-```text
-article page
-  -> Mozilla Readability extracts the article from a cloned page
-  -> isolated content script maps the coherent reader result and stable paragraph IDs back to the live page
-  -> side panel requests an analysis
-  -> persistent side panel reads the session-only API key
-  -> OpenAI Responses API returns Structured Outputs
-  -> local schema and reference validation
-  -> successful result is cached by normalized URL and article-content fingerprint
-  -> side panel renders the verdict, metrics, issues, conclusion, and paragraph links
-```
+![A LedeLens finding linked to a highlighted paragraph in a fictional article](docs/assets/source-traceability.webp)
 
-The extracted article is untrusted input. Article text is sent separately from the system instruction and cannot redefine the analysis role or output contract.
+## A visible, reusable workflow
 
-The canonical model behavior lives in [`skills/analyze-news-structure/assets/system-prompt.md`](skills/analyze-news-structure/assets/system-prompt.md). The canonical response contract is [`skills/analyze-news-structure/assets/output-schema.json`](skills/analyze-news-structure/assets/output-schema.json). Breaking field or meaning changes require a new schema version; see [`MIGRATIONS.md`](MIGRATIONS.md).
+LedeLens shows what it is doing while a report is generated. After a successful analysis, it can restore the result for the same unchanged article from local extension storage—without another OpenAI request.
 
-## Security and privacy
+![LedeLens detecting a source, showing analysis progress, and restoring a saved result](docs/assets/analysis-flow.webp)
 
-Direct browser-to-provider calls are a deliberate proof-of-concept tradeoff. LedeLens:
+## What LedeLens does—and does not do
 
-- keeps provider credentials out of content scripts and page DOM;
-- stores the API key only in Chrome session storage;
-- does not log, sync, or commit API keys;
-- sends only the extracted page content required for the requested analysis;
-- sets `store: false` on OpenAI Responses API requests.
+LedeLens is a **structural reading aid**. It evaluates whether an article's conclusions stay within its stated evidence and whether its reasoning is presented clearly.
 
-Successful analysis results, normalized article URLs, and non-reversible content fingerprints are stored in `chrome.storage.local` so a page can be reopened without another API call. The cache is limited to 30 entries, is not synchronized through Chrome Sync, and is invalidated when the extracted article content changes.
+It does not:
 
-A browser extension remains a sensitive place for a provider credential. Review [SECURITY.md](SECURITY.md) before using LedeLens with a valuable or broadly privileged key. A production distribution should consider a scoped token broker or local companion.
+- verify events, quotations, statistics, or linked documents;
+- rate the real-world credibility of a publication or source;
+- decide which political viewpoint is correct;
+- infer that an author intended to manipulate readers.
 
-Long-running model requests execute in the open side panel rather than the Manifest V3 service worker. They use the Responses API's server-sent event stream so the connection receives lifecycle events and output while the model works. This avoids idle fetch timeouts while keeping credentials inside extension contexts and out of article pages. Each OpenAI call includes a unique client request ID so network failures can be traced without exposing the API key.
+The result should be a prompt for closer reading, not a substitute for judgment or independent verification.
 
-The request does not override reasoning effort; the selected model uses its own default behavior. It uses low output verbosity to reduce redundant JSON prose while preserving the complete analysis contract. After each successful run, the side panel reports time to first output, total request time, and reasoning-token usage when OpenAI supplies it. Time to first output includes queueing and model preparation; the API does not expose reasoning wall-clock time separately.
-
-## Development
+## Quick start
 
 Requirements:
 
 - Google Chrome 116 or newer
-- Node.js 24 or newer for local verification
-- An OpenAI API key for live analysis
+- Node.js 24 or newer
+- An OpenAI API key
 
-Install dependencies and run the repository checks:
+```bash
+git clone https://github.com/biaoxie/lede-lens.git
+cd lede-lens
+npm ci
+```
+
+Then:
+
+1. Open `chrome://extensions`.
+2. Enable **Developer mode**.
+3. Select **Load unpacked** and choose the repository folder.
+4. Open a news article and select the LedeLens toolbar icon.
+5. Enter your OpenAI API key, load the models available to that key, choose one, and confirm.
+6. Select **Analyze article**.
+
+For installation details, selected-text analysis, cached reports, and troubleshooting, see the [Quick Start](quick-start.md).
+
+## Project status
+
+LedeLens is an early proof of concept installed as an unpacked Chrome extension. The current provider integration supports OpenAI; the analysis contract itself remains provider-neutral. API usage may incur OpenAI charges, and extraction can be incomplete on paywalled pages, protected browser pages, or sites that render article text inside inaccessible frames.
+
+## How it works
+
+```text
+News article
+  → Mozilla Readability extracts the article locally
+  → LedeLens assigns stable paragraph IDs
+  → OpenAI returns a structured analysis
+  → LedeLens validates the result locally
+  → The side panel renders findings linked to the article
+```
+
+Article text is treated as untrusted input and is sent separately from the analysis instructions. It cannot redefine the model's role or output contract.
+
+The provider-neutral analysis contract lives in:
+
+- [`skills/analyze-news-structure/assets/system-prompt.md`](skills/analyze-news-structure/assets/system-prompt.md) — canonical model instructions
+- [`skills/analyze-news-structure/assets/output-schema.json`](skills/analyze-news-structure/assets/output-schema.json) — canonical output contract
+
+Breaking changes to fields or their meaning require a new schema version; see [`MIGRATIONS.md`](MIGRATIONS.md).
+
+## Privacy and API-key handling
+
+LedeLens currently calls OpenAI directly from the Chrome side panel. This keeps the project simple and inspectable, but a browser extension is still a sensitive place for a provider credential.
+
+- Your API key stays out of article pages and content scripts.
+- The key is stored in `chrome.storage.session`, not synchronized storage.
+- Chrome clears it when the browser session ends.
+- LedeLens does not intentionally log, sync, or commit the key.
+- OpenAI requests use `store: false`.
+- Only content extracted for the analysis you request is sent to OpenAI.
+
+Successful reports are stored in `chrome.storage.local` so reopening the same unchanged article does not require another API call. Each entry contains the report, normalized article URL, and a non-reversible content fingerprint. The cache is local to the browser profile, is not synchronized with Chrome Sync, and is limited to 30 reports. A changed article does not reuse its earlier cached report.
+
+Use a restricted OpenAI project key, monitor its usage, and review [SECURITY.md](SECURITY.md) before using a valuable or broadly privileged key.
+
+## Model selection and request behavior
+
+LedeLens requests `/v1/models` with the API key you provide and lets you explicitly select a compatible GPT-5 model. It does not hard-code a reasoning effort; the selected model uses its default. Low output verbosity reduces redundant JSON prose without removing any part of the analysis contract.
+
+Requests use the OpenAI Responses API event stream. The side panel shows progress while the model works and reports time to first output, total request time, and reasoning-token usage when OpenAI provides it.
+
+## Page access and cached reports
+
+LedeLens uses Chrome's temporary `activeTab` permission instead of requesting permanent access to every website. Selecting the toolbar icon grants access to the current page.
+
+If the side panel remains open while you navigate or switch tabs, LedeLens clears the previous report and asks you to select the toolbar icon again. Once access is granted, it restores a matching cached report or prepares the new page for analysis.
+
+## Development
+
+Install dependencies and run all checks:
 
 ```bash
 npm ci
 npm run verify
 ```
 
-`npm run verify` enforces at least 95% line, branch, and function coverage across the unit-testable core modules in `src/lib/`, in addition to static checks for the Chrome integration files.
+Verification includes static integration checks and enforces at least 95% line, branch, and function coverage for the unit-testable core modules in `src/lib/`.
 
-Mozilla Readability is the only runtime package dependency. It runs locally against a cloned document; LedeLens does not send the page to a separate extraction service. Reload the extension from `chrome://extensions` after changing source files.
+Mozilla Readability is the only runtime dependency. It processes a cloned document locally; no separate extraction service receives the page. After changing extension files, reload LedeLens from `chrome://extensions` and refresh the article tab.
 
-## Project layout
+### Project layout
 
 ```text
 manifest.json                         Chrome extension manifest
-src/background.js                    Settings, session credential storage, and side-panel lifecycle
-src/content.js                       Reader-mode extraction, source mapping, and highlighting
-src/lib/openai.js                    OpenAI request, tracing, parsing, and local validation
-src/lib/validator.js                 Local schema and reference validation
-src/sidepanel/                        Side panel UI
+src/background.js                    Settings, cache, and side-panel lifecycle
+src/content.js                       Article extraction, source mapping, and highlighting
+src/lib/openai.js                    OpenAI streaming, parsing, and result validation
+src/lib/cache.js                     URL/content matching and bounded local cache
+src/lib/validator.js                 JSON Schema and paragraph-reference validation
+src/sidepanel/                        Side-panel interface
 skills/analyze-news-structure/        Provider-neutral analysis contract
 tests/                                Node test suite
 scripts/check.mjs                     Static repository checks
@@ -105,8 +158,8 @@ scripts/check.mjs                     Static repository checks
 
 ## Contributing
 
-Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and preserve the product and security boundaries described above.
+Issues and focused pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before changing analysis behavior, provider integration, credential handling, or the output schema.
 
 ## License
 
-Licensed under the [Apache License 2.0](LICENSE).
+LedeLens is licensed under the [Apache License 2.0](LICENSE).
