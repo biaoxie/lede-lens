@@ -16,7 +16,12 @@ Install [LedeLens from the Chrome Web Store](https://chromewebstore.google.com/d
 
 ## 1. Download and prepare LedeLens
 
-Clone the repository:
+For the simplest installation, download the Chrome-ready ZIP from
+[GitHub Releases](https://github.com/biaoxie/lede-lens/releases/latest), extract
+it into a permanent folder, and continue to step 2. No Node.js or build step is
+required for the release ZIP.
+
+For development, clone the repository:
 
 ```bash
 git clone https://github.com/biaoxie/lede-lens.git
@@ -43,7 +48,7 @@ When source files change, return to `chrome://extensions`, select LedeLens's rel
 3. Open settings and paste your OpenAI API key.
 4. Select **Load available models**.
 5. Choose a compatible GPT-5 model returned for your OpenAI project.
-6. Select **Confirm settings**.
+6. Select **Save and continue**.
 
 LedeLens requests the available models directly from OpenAI and verifies your selection before saving it. The key is stored only in `chrome.storage.session`; Chrome clears it when the browser session ends. You will need to enter it again after fully closing and reopening Chrome.
 
@@ -53,7 +58,7 @@ Before an analysis, LedeLens explains that the extracted article text and metada
 
 ## 4. Analyze a full article
 
-1. Choose **Full article**.
+1. Choose **Entire article**.
 2. Select **Analyze article**.
 3. Follow the progress messages while LedeLens extracts the article, waits for OpenAI, validates the structured response, and renders the report.
 4. Select a paragraph badge such as `p4` to return to and highlight the relevant passage.
@@ -72,8 +77,8 @@ The report evaluates internal support, sourcing, causal reasoning, missing conte
 To focus on one passage:
 
 1. Select text on the article page.
-2. Choose **Selected text** in the side panel.
-3. Select **Analyze selected text**.
+2. Choose **Selected passage** in the side panel.
+3. Select **Analyze selected passage**.
 
 ## Reopen a saved report
 
@@ -85,11 +90,11 @@ To restore it:
 2. Select the LedeLens toolbar icon.
 3. LedeLens restores the report automatically if the URL and extracted article content still match.
 
-Restoring a report does not make another OpenAI request. Select **Re-analyze article** when you want a fresh result.
+Restoring a report does not make another OpenAI request. Select **Run a new analysis** when you want a fresh result.
 
 The cache is limited to 30 reports and is not synchronized through Chrome Sync. If the article content changes, LedeLens does not reuse the old report.
 
-To delete every cached report and page identifier, open settings and select **Clear saved analyses**.
+To delete every cached report and page identifier, open settings and select **Delete saved reports**.
 
 ## Switching pages while the side panel is open
 
@@ -117,7 +122,7 @@ Open a regular `http://` or `https://` article. If you switched tabs or navigate
 
 Full-article mode uses Mozilla Readability, the standalone parser used by Firefox Reader View. It analyzes document structure and text density rather than relying on site-specific selectors.
 
-Some pages place content in unusual containers, interactive viewers, inaccessible frames, or paywalled sections. Select the relevant passage and use **Selected text** when full-article extraction is incomplete.
+Some pages place content in unusual containers, interactive viewers, inaccessible frames, or paywalled sections. Select the relevant passage and use **Selected passage** when full-article extraction is incomplete.
 
 ### The OpenAI request fails
 

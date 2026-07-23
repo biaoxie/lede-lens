@@ -11,6 +11,8 @@ LedeLens is an open-source Chrome extension that shows whether an article's conc
 > **Interactive demo: [ledelens.app](https://ledelens.app)** — explore a saved analysis of a fictional article without an API key.
 >
 > **Chrome extension:** Under review in the Chrome Web Store. Until it is approved, follow the [Quick Start](quick-start.md) to install it locally.
+>
+> **Easy download:** Get the latest Chrome-ready ZIP from [GitHub Releases](https://github.com/biaoxie/lede-lens/releases/latest). Extract it and follow the included `INSTALL.md`; no Node.js or build step is required.
 
 ![LedeLens analyzing a fictional city-library article beside the source page](docs/assets/lede-lens-hero.webp)
 
