@@ -228,8 +228,72 @@ button { color: inherit; }
 
 .browser-stage {
   position: relative;
-  width: min(1460px, calc(100% - 40px));
+  width: min(1280px, calc(100% - 96px));
   margin: 0 auto clamp(90px, 10vw, 160px);
+}
+
+.version-compare {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  margin: 0 10px 18px;
+}
+
+.version-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.version-copy strong {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 23px;
+  line-height: 1;
+}
+
+.version-copy span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.version-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-width: 470px;
+  padding: 5px;
+  border: 1px solid #d0c7ba;
+  border-radius: 13px;
+  background: rgba(231, 225, 214, .82);
+}
+
+.version-toggle button {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 11px 15px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #746d64;
+  text-align: left;
+  cursor: pointer;
+}
+
+.version-toggle button.active {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 4px 14px rgba(67, 52, 36, .11);
+}
+
+.version-toggle button strong {
+  font-size: 11px;
+}
+
+.version-toggle button span {
+  overflow: hidden;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .browser-window {
@@ -687,6 +751,10 @@ button { color: inherit; }
   font-size: 23px;
 }
 
+.overall-rating.warning {
+  color: #a15b20;
+}
+
 .overall-rating button,
 .style-row button {
   display: grid;
@@ -744,6 +812,7 @@ button { color: inherit; }
 
 .style-row strong { margin-left: auto; }
 .style-row strong { color: var(--green); }
+.style-row strong.warning { color: #a15b20; }
 
 .result-section h2,
 .section-title-row h2 {
@@ -811,6 +880,9 @@ button { color: inherit; }
   height: 6px;
   box-shadow: none;
 }
+
+.metric-status.partial { color: #a15b20; }
+.metric-status.missing { color: #a93d2d; }
 
 .paragraph-links {
   display: flex;
@@ -1210,7 +1282,23 @@ button { color: inherit; }
   text-underline-offset: 3px;
 }
 
+.severity.high {
+  background: #f3ddd5;
+  color: #933d2b;
+}
+
 @media (max-width: 960px) {
+  .version-compare {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .version-toggle {
+    min-width: 0;
+    width: 100%;
+  }
+
   .lede-panel {
     width: 390px;
     flex-basis: 390px;
@@ -1252,6 +1340,18 @@ button { color: inherit; }
 
   .browser-stage {
     width: calc(100% - 20px);
+  }
+
+  .version-compare {
+    margin-inline: 0;
+  }
+
+  .version-copy strong {
+    font-size: 21px;
+  }
+
+  .version-toggle button {
+    padding-inline: 10px;
   }
 
   .browser-window {

@@ -1,0 +1,61 @@
+{
+  "schema_version": "0.2.0",
+  "language": "en",
+  "extraction_assessment": {
+    "status": "complete",
+    "limitations": []
+  },
+  "article_metrics": {
+    "evidence_coverage": {
+      "status": "partial",
+      "rationale": "The article provides attendance, survey, and annual-cost figures, but those facts do not establish its larger suggestion that the city is wasting public money.",
+      "paragraph_ids": ["p1", "p2", "p4", "p6", "p10"]
+    },
+    "source_traceability": {
+      "status": "present",
+      "rationale": "Readers can identify which information comes from library records, the visitor survey, the library director, the city council, and library estimates.",
+      "paragraph_ids": ["p2", "p4", "p5", "p6", "p9"]
+    },
+    "causal_support": {
+      "status": "partial",
+      "rationale": "The article correctly notes that longer hours are not proven to have caused the increase, but it then leans toward temporary events as an explanation without evidence showing their relative effect.",
+      "paragraph_ids": ["p2", "p3", "p5", "p10"]
+    },
+    "context_completeness": {
+      "status": "partial",
+      "rationale": "It includes the added annual cost and important study limits, but gives no budget comparison, service benchmark, or cost-benefit basis needed to judge the spending as wasteful.",
+      "paragraph_ids": ["p6", "p7", "p8", "p9", "p10"]
+    },
+    "framing_uncertainty_separation": {
+      "status": "missing",
+      "rationale": "Loaded phrases about taxpayers, justification, supposed success, and officials acting despite unanswered questions repeatedly present an interpretation of waste as if it followed from the reported facts.",
+      "paragraph_ids": ["p1", "p2", "p4", "p8", "p10"]
+    }
+  },
+  "issues": [
+    {
+      "type": "scope_shift",
+      "severity": "high",
+      "description": "The article moves from evidence about attendance, visitor preferences, and added cost to a broad judgment about waste without a benchmark for deciding whether the service is worth its cost.",
+      "paragraph_ids": ["p1", "p6", "p8", "p10"]
+    },
+    {
+      "type": "fact_commentary_blend",
+      "severity": "high",
+      "description": "Negative commentary is woven into factual reporting through phrases such as “taxpayers will continue paying,” “officials justified,” and “supposed success.”",
+      "paragraph_ids": ["p1", "p2", "p8", "p10"]
+    },
+    {
+      "type": "one_sided_sourcing",
+      "severity": "medium",
+      "description": "The article emphasizes reasons to doubt the decision while giving little space to the reported service rationale or to any comparison that could test whether the added cost is excessive.",
+      "paragraph_ids": ["p3", "p7", "p8", "p10"]
+    }
+  ],
+  "bounded_conclusion": "If the article's reported facts are accurate, Saturday entries rose during the pilot, many surveyed Saturday visitors favored keeping later hours, the city approved two additional weekend staff shifts, and the permanent schedule is estimated to add $46,000 a year. The article supports scrutiny of whether the added service is worth that cost, but it does not provide enough information to conclude that the city is wasting public money.",
+  "structural_assessment": {
+    "evidence_structure": "evidence_limited",
+    "presentation_style": "manipulation_risk_signals",
+    "one_sentence": "The article reports real limits in the pilot evidence, but its repeated taxpayer-waste framing pushes well beyond what the attendance, survey, and cost figures can establish."
+  }
+}

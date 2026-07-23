@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import analysis from "./fixtures/library-analysis.json";
+import restrainedAnalysis from "./fixtures/library-analysis.json";
+import wasteFramingAnalysis from "./fixtures/library-analysis-waste-framing.json";
 
 type DemoStage = "closed" | "ready" | "loading" | "complete";
+type ArticleVersion = "a" | "b";
 
 const metricLabels: Record<string, string> = {
   evidence_coverage: "What supports the main point?",
@@ -13,30 +15,60 @@ const metricLabels: Record<string, string> = {
   framing_uncertainty_separation: "Are reporting, interpretation, and uncertainty kept separate?",
 };
 
-const metricStatusLabels: Record<string, string> = {
-  evidence_coverage: "Strong support",
-  source_traceability: "Clear",
-  causal_support: "Supported",
-  context_completeness: "Enough context",
-  framing_uncertainty_separation: "Clearly distinguished",
+const statusLabels: Record<string, string> = {
+  present: "Strong",
+  partial: "Limited",
+  missing: "Missing",
+  not_applicable: "Not applicable",
 };
 
 const issueLabels: Record<string, string> = {
   selection_ambiguity: "Unclear selection",
+  scope_shift: "Conclusion outruns the evidence",
+  fact_commentary_blend: "Reporting and commentary blend",
+  one_sided_sourcing: "One-sided emphasis",
 };
 
-const articleParagraphs = [
-  "The Arbor City Library will make later Saturday hours permanent after a six-month pilot, extending service until 8 p.m. beginning next month.",
-  "The library board approved the schedule after reviewing pilot attendance, visitor feedback, and the cost of keeping the building open for three additional hours.",
-  "Library records show Saturday entries rose 18% during the pilot compared with the same six-month period last year. The entry counts show when people arrived, but not why attendance changed.",
-  "A voluntary survey offered inside the library on Saturdays received 642 responses. Seventy-two percent of respondents wanted the later hours to continue, 14% preferred the earlier closing time, and the rest expressed no preference.",
-  "Library director Elena Park said the attendance records and survey informed the recommendation. She said the data did not prove that longer hours alone caused the increase in visits.",
-  "The city council approved funding for two additional weekend staff shifts. The library estimates that the permanent schedule will add $46,000 in annual staffing and utility costs.",
-  "Park said later hours could make the library easier to use for residents who work during the day, while noting that the pilot did not measure visitors' work schedules.",
-  "The library said a winter reading festival, three community workshops, and seasonal changes may also have affected attendance. Because the survey reached only Saturday visitors, it did not capture the views of non-visitors or other residents.",
-  "Council member David Lin supported the funding but asked the library to publish quarterly attendance and cost figures. He said the schedule should be reconsidered if visits return to their earlier level.",
-  "The library will review attendance, staffing costs, and visitor feedback after one year. Officials said the pilot supports that visits rose while later hours were offered and that many surveyed visitors favored the schedule, but it does not establish that the schedule itself caused the increase.",
-];
+const articles = {
+  a: {
+    label: "Version A",
+    shortLabel: "Restrained reporting",
+    title: "City library extends weekend hours",
+    dek: "Attendance records and a visitor survey supported the change, while officials said seasonal events may also have influenced the results.",
+    analysis: restrainedAnalysis,
+    paragraphs: [
+      "The Arbor City Library will make later Saturday hours permanent after a six-month pilot, extending service until 8 p.m. beginning next month.",
+      "The library board approved the schedule after reviewing pilot attendance, visitor feedback, and the cost of keeping the building open for three additional hours.",
+      "Library records show Saturday entries rose 18% during the pilot compared with the same six-month period last year. The entry counts show when people arrived, but not why attendance changed.",
+      "A voluntary survey offered inside the library on Saturdays received 642 responses. Seventy-two percent of respondents wanted the later hours to continue, 14% preferred the earlier closing time, and the rest expressed no preference.",
+      "Library director Elena Park said the attendance records and survey informed the recommendation. She said the data did not prove that longer hours alone caused the increase in visits.",
+      "The city council approved funding for two additional weekend staff shifts. The library estimates that the permanent schedule will add $46,000 in annual staffing and utility costs.",
+      "Park said later hours could make the library easier to use for residents who work during the day, while noting that the pilot did not measure visitors' work schedules.",
+      "The library said a winter reading festival, three community workshops, and seasonal changes may also have affected attendance. Because the survey reached only Saturday visitors, it did not capture the views of non-visitors or other residents.",
+      "Council member David Lin supported the funding but asked the library to publish quarterly attendance and cost figures. He said the schedule should be reconsidered if visits return to their earlier level.",
+      "The library will review attendance, staffing costs, and visitor feedback after one year. Officials said the pilot supports that visits rose while later hours were offered and that many surveyed visitors favored the schedule, but it does not establish that the schedule itself caused the increase.",
+    ],
+  },
+  b: {
+    label: "Version B",
+    shortLabel: "Government waste framing",
+    title: "City pours more taxpayer money into late-night library hours",
+    dek: "Officials are adding staff shifts after a limited visitor survey and an attendance increase they cannot show was caused by longer hours.",
+    analysis: wasteFramingAnalysis,
+    paragraphs: [
+      "Arbor City taxpayers will continue paying for later Saturday hours at the public library after the city council approved funding for two additional weekend staff shifts.",
+      "Officials justified the decision by pointing to an 18% increase in Saturday visits during a six-month pilot. But the library's records merely counted entries. They do not show why people visited or whether keeping the building open later caused the increase.",
+      "Other events offer obvious alternative explanations. A winter reading festival, three community workshops, and seasonal changes took place during the same period, making it impossible to know how much of the reported increase had anything to do with the extended schedule.",
+      "The city also cited a voluntary survey offered to people already visiting the library on Saturdays. Of the 642 respondents, 72% wanted the later hours to continue, while 14% preferred the previous closing time. The rest expressed no preference.",
+      "Library director Elena Park said the attendance records and survey informed the recommendation, while acknowledging that the data did not prove longer hours alone caused the increase.",
+      "The city council approved two additional weekend staff shifts even though the library estimates the permanent schedule will add $46,000 in annual staffing and utility costs.",
+      "Park said later hours could make the library easier to use for residents who work during the day. The pilot, however, did not measure visitors' work schedules.",
+      "Despite these unanswered questions, officials decided to make the extended schedule permanent. The city has not demonstrated that the extra expense produced the attendance increase or that the broader public considers it a worthwhile use of municipal funds.",
+      "Council member David Lin supported the funding but asked the library to publish quarterly attendance and cost figures. He said the schedule should be reconsidered if visits return to their earlier level.",
+      "The library will review attendance, staffing costs, and visitor feedback after one year. Until then, taxpayers will be funding a policy whose supposed success may owe as much to temporary events and a self-selected survey as to the longer hours themselves.",
+    ],
+  },
+} as const;
 
 const progressCopy = [
   ["Extracting the article", "Finding the main text and assigning source paragraphs."],
@@ -49,7 +81,46 @@ function StatusDot({ tone = "green" }: { tone?: "green" | "amber" | "red" }) {
   return <span className={`status-dot ${tone}`} aria-hidden="true" />;
 }
 
-function BrowserArticle({ highlighted }: { highlighted: string[] }) {
+type ArticleData = (typeof articles)[ArticleVersion];
+
+function VersionToggle({
+  version,
+  onChange,
+}: {
+  version: ArticleVersion;
+  onChange: (version: ArticleVersion) => void;
+}) {
+  return (
+    <div className="version-compare">
+      <div className="version-copy">
+        <strong>Same reported facts. Different framing.</strong>
+        <span>Switch versions, then compare what LedeLens finds.</span>
+      </div>
+      <div className="version-toggle" role="group" aria-label="Choose article version">
+        {(["a", "b"] as const).map((id) => (
+          <button
+            key={id}
+            type="button"
+            className={version === id ? "active" : ""}
+            aria-pressed={version === id}
+            onClick={() => onChange(id)}
+          >
+            <strong>{articles[id].label}</strong>
+            <span>{articles[id].shortLabel}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BrowserArticle({
+  article,
+  highlighted,
+}: {
+  article: ArticleData;
+  highlighted: string[];
+}) {
   return (
     <div className="article-page">
       <div className="fiction-banner">Fictional demonstration article</div>
@@ -63,15 +134,15 @@ function BrowserArticle({ highlighted }: { highlighted: string[] }) {
       </nav>
       <article className="mock-article">
         <p className="article-section">Community</p>
-        <h1>City library extends weekend hours</h1>
-        <p className="article-dek">Attendance records and a visitor survey supported the change, while officials said seasonal events may also have influenced the results.</p>
+        <h1>{article.title}</h1>
+        <p className="article-dek">{article.dek}</p>
         <p className="article-byline">By Maya Chen · July 18, 2026 · 5 min read</p>
         <div className="mini-library" aria-label="Stylized library reading room">
           <div className="mini-window" /><div className="mini-shelf left" /><div className="mini-shelf right" />
           <div className="mini-table" /><div className="mini-lamp" />
         </div>
         <div className="article-copy">
-          {articleParagraphs.map((paragraph, index) => {
+          {article.paragraphs.map((paragraph, index) => {
             const id = `p${index + 1}`;
             return (
               <p id={`article-${id}`} key={id} className={highlighted.includes(id) ? "paragraph-highlighted" : ""}>
@@ -87,13 +158,13 @@ function BrowserArticle({ highlighted }: { highlighted: string[] }) {
   );
 }
 
-function ReadyPanel({ onAnalyze }: { onAnalyze: () => void }) {
+function ReadyPanel({ article, onAnalyze }: { article: ArticleData; onAnalyze: () => void }) {
   return (
     <>
       <div className="panel-modes"><span className="active">Full article</span><span>Selected text</span></div>
       <section className="source-card">
         <p className="panel-eyebrow">Detected source</p>
-        <h2>City library extends weekend hours</h2>
+        <h2>{article.title}</h2>
         <p>By Maya Chen · July 18, 2026 · 5 min read · 10 paragraphs</p>
       </section>
       <div className="panel-empty">
@@ -126,13 +197,32 @@ function LoadingPanel({ step }: { step: number }) {
   );
 }
 
-function ResultsPanel({ onHighlight, onAnalyze, onReset }: { onHighlight: (ids: string[]) => void; onAnalyze: () => void; onReset: () => void }) {
+function ResultsPanel({
+  article,
+  onHighlight,
+  onAnalyze,
+  onReset,
+}: {
+  article: ArticleData;
+  onHighlight: (ids: string[]) => void;
+  onAnalyze: () => void;
+  onReset: () => void;
+}) {
+  const analysis = article.analysis;
+  const isRestrained = analysis.structural_assessment.evidence_structure === "structurally_solid";
+  const rating = isRestrained ? "Well supported" : "Evidence limited";
+  const ratingSummary = isRestrained
+    ? "The article presents strong support for its main takeaway."
+    : "The article's main takeaway goes beyond the support it presents.";
+  const style = isRestrained ? "Restrained" : "Manipulation risk signals";
+  const strongMetrics = Object.values(analysis.article_metrics).filter((metric) => metric.status === "present").length;
+
   return (
     <div className="results-panel">
       <div className="panel-modes"><span className="active">Full article</span><span>Selected text</span></div>
       <section className="source-card">
         <p className="panel-eyebrow">Detected source</p>
-        <h2>City library extends weekend hours</h2>
+        <h2>{article.title}</h2>
         <p>By Maya Chen · July 18, 2026 · 5 min read · 10 paragraphs</p>
       </section>
       <p className="demo-data-note">This demo loads a saved LedeLens result. It does not call the OpenAI API or send article text. The Chrome extension uses your OpenAI API key, sends extracted article text and metadata to OpenAI when you analyze, and OpenAI charges may apply.</p>
@@ -140,17 +230,17 @@ function ResultsPanel({ onHighlight, onAnalyze, onReset }: { onHighlight: (ids: 
       <p className="demo-data-note">Saved result timing: OpenAI first output 2.2s · total 7.3s · 0 reasoning tokens.</p>
       <section className="overall-card">
         <p className="panel-eyebrow">How well does this article support its main takeaway?</p>
-        <div className="overall-rating">
-          <StatusDot />
-          <strong>Well supported</strong>
+        <div className={`overall-rating ${isRestrained ? "" : "warning"}`}>
+          <StatusDot tone={isRestrained ? "green" : "amber"} />
+          <strong>{rating}</strong>
           <button className="rating-help" type="button" aria-label="About this rating" aria-describedby="rating-explainer">?</button>
-          <span id="rating-explainer" className="rating-tooltip" role="tooltip">The article presents strong support for its main takeaway.</span>
+          <span id="rating-explainer" className="rating-tooltip" role="tooltip">{ratingSummary}</span>
         </div>
-        <p>The article presents strong support for its main takeaway.</p>
+        <p>{ratingSummary}</p>
         <p>This looks only at support presented in the article. It does not check whether the reported claims are true.</p>
         <div className="style-row">
           <span>Presentation style</span>
-          <strong>Restrained</strong>
+          <strong className={isRestrained ? "" : "warning"}>{style}</strong>
           <button className="rating-help" type="button" aria-label="About presentation style" aria-describedby="style-explainer">?</button>
           <span id="style-explainer" className="rating-tooltip" role="tooltip">Presentation style describes how the article is written, not whether it is true.</span>
         </div>
@@ -163,13 +253,16 @@ function ResultsPanel({ onHighlight, onAnalyze, onReset }: { onHighlight: (ids: 
       </section>
 
       <section className="result-section">
-        <div className="section-title-row"><h2>Five questions to ask</h2><span>5 strong</span></div>
+        <div className="section-title-row"><h2>Five questions to ask</h2><span>{strongMetrics} strong</span></div>
         <div className="metric-list">
           {Object.entries(analysis.article_metrics).map(([name, metric]) => (
             <article className="metric-card" key={name}>
               <div className="metric-heading">
                 <h3>{metricLabels[name]}</h3>
-                <span className={`metric-status ${metric.status}`}><StatusDot />{metricStatusLabels[name]}</span>
+                <span className={`metric-status ${metric.status}`}>
+                  <StatusDot tone={metric.status === "present" ? "green" : metric.status === "missing" ? "red" : "amber"} />
+                  {statusLabels[metric.status]}
+                </span>
               </div>
               <p>{metric.rationale}</p>
               <div className="paragraph-links">
@@ -188,7 +281,7 @@ function ResultsPanel({ onHighlight, onAnalyze, onReset }: { onHighlight: (ids: 
           <article className="issue-card" key={issue.type}>
             <div className="metric-heading">
               <h3>{issueLabels[issue.type]}</h3>
-              <span className={`severity ${issue.severity}`}>{issue.severity === "medium" ? "Medium" : "Low"}</span>
+              <span className={`severity ${issue.severity}`}>{issue.severity[0].toUpperCase() + issue.severity.slice(1)}</span>
             </div>
             <p>{issue.description}</p>
             <div className="paragraph-links">
@@ -211,9 +304,11 @@ function ResultsPanel({ onHighlight, onAnalyze, onReset }: { onHighlight: (ids: 
 
 export default function DemoExperience() {
   const [stage, setStage] = useState<DemoStage>("closed");
+  const [version, setVersion] = useState<ArticleVersion>("a");
   const [step, setStep] = useState(0);
   const [highlighted, setHighlighted] = useState<string[]>([]);
   const browserRef = useRef<HTMLDivElement>(null);
+  const article = articles[version];
 
   useEffect(() => {
     if (stage !== "loading") return;
@@ -246,6 +341,14 @@ export default function DemoExperience() {
   const startAnalysis = () => {
     setStep(0);
     setStage("loading");
+  };
+
+  const changeVersion = (nextVersion: ArticleVersion) => {
+    if (nextVersion === version) return;
+    setVersion(nextVersion);
+    setHighlighted([]);
+    setStep(0);
+    if (stage === "loading") setStage("ready");
   };
 
   return (
@@ -283,10 +386,11 @@ export default function DemoExperience() {
       </section>
 
       <section className="browser-stage" ref={browserRef} aria-label="Interactive LedeLens demonstration">
+        <VersionToggle version={version} onChange={changeVersion} />
         <div className={`browser-window panel-${stage}`}>
           <div className="browser-tabs">
             <div className="window-controls"><i /><i /><i /></div>
-            <div className="browser-tab active"><span className="tab-favicon">M</span><span>City library extends weekend hours</span><b>×</b></div>
+            <div className="browser-tab active"><span className="tab-favicon">M</span><span>{article.title}</span><b>×</b></div>
             <button className="new-tab" type="button" aria-label="New tab">+</button>
           </div>
           <div className="browser-toolbar">
@@ -304,7 +408,7 @@ export default function DemoExperience() {
             <span className="browser-menu">⋮</span>
           </div>
           <div className="browser-content">
-            <div className="article-viewport"><BrowserArticle highlighted={highlighted} /></div>
+            <div className="article-viewport"><BrowserArticle article={article} highlighted={highlighted} /></div>
             {stage !== "closed" && (
               <aside className="lede-panel">
                 <header className="panel-header">
@@ -312,9 +416,16 @@ export default function DemoExperience() {
                   <button type="button" aria-label="Close side panel" onClick={() => setStage("closed")}>×</button>
                 </header>
                 <div className="panel-scroll">
-                  {stage === "ready" && <ReadyPanel onAnalyze={startAnalysis} />}
+                  {stage === "ready" && <ReadyPanel article={article} onAnalyze={startAnalysis} />}
                   {stage === "loading" && <LoadingPanel step={step} />}
-                  {stage === "complete" && <ResultsPanel onHighlight={highlightParagraphs} onAnalyze={startAnalysis} onReset={resetDemo} />}
+                  {stage === "complete" && (
+                    <ResultsPanel
+                      article={article}
+                      onHighlight={highlightParagraphs}
+                      onAnalyze={startAnalysis}
+                      onReset={resetDemo}
+                    />
+                  )}
                 </div>
               </aside>
             )}

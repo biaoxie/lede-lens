@@ -36,11 +36,15 @@ test("server-renders the interactive LedeLens demo", async (t) => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>City library extends weekend hours/);
+  assert.match(html, /<title>Same facts\. Different framing\./);
   assert.match(html, /See how an article/);
   assert.match(html, /Try the interactive demo/);
   assert.match(html, /Fictional demonstration article/);
   assert.match(html, /Saved demo result · no API key used/);
+  assert.match(html, /Same reported facts\. Different framing\./);
+  assert.match(html, /Version A/);
+  assert.match(html, /Version B/);
+  assert.match(html, /Government waste framing/);
   assert.match(html, /Open LedeLens/);
   assert.match(html, /City library extends weekend hours/);
   assert.match(html, /Saved LedeLens result/);
@@ -54,6 +58,9 @@ test("ships a complete, static analysis fixture and social card", async () => {
   );
   const fixture = JSON.parse(
     await readFile(new URL("../app/fixtures/library-analysis.json", import.meta.url), "utf8"),
+  );
+  const wasteFramingFixture = JSON.parse(
+    await readFile(new URL("../app/fixtures/library-analysis-waste-framing.json", import.meta.url), "utf8"),
   );
 
   assert.equal(fixture.schema_version, "0.2.0");
@@ -69,12 +76,24 @@ test("ships a complete, static analysis fixture and social card", async () => {
   ]);
   assert.equal(fixture.issues.length, 1);
   assert.equal(fixture.issues[0].severity, "medium");
+  assert.equal(wasteFramingFixture.schema_version, "0.2.0");
+  assert.equal(wasteFramingFixture.structural_assessment.evidence_structure, "evidence_limited");
+  assert.equal(wasteFramingFixture.structural_assessment.presentation_style, "manipulation_risk_signals");
+  assert.equal(wasteFramingFixture.article_metrics.framing_uncertainty_separation.status, "missing");
+  assert.equal(wasteFramingFixture.issues.length, 3);
   const referencedParagraphs = [
     ...Object.values(fixture.article_metrics).flatMap((metric) => metric.paragraph_ids),
     ...fixture.issues.flatMap((issue) => issue.paragraph_ids),
   ];
   assert.ok(referencedParagraphs.every((id) => /^p(?:[1-9]|10)$/.test(id)));
+  const wasteFramingParagraphs = [
+    ...Object.values(wasteFramingFixture.article_metrics).flatMap((metric) => metric.paragraph_ids),
+    ...wasteFramingFixture.issues.flatMap((issue) => issue.paragraph_ids),
+  ];
+  assert.ok(wasteFramingParagraphs.every((id) => /^p(?:[1-9]|10)$/.test(id)));
   assert.match(componentSource, /Chrome extension uses your OpenAI API key/);
+  assert.match(componentSource, /City pours more taxpayer money into late-night library hours/);
+  assert.match(componentSource, /Same reported facts\. Different framing\./);
   assert.match(componentSource, /10 paragraphs/);
   assert.match(componentSource, /Saved result timing: OpenAI first output 2\.2s · total 7\.3s · 0 reasoning tokens/);
   assert.match(componentSource, /Schema 0\.2\.0/);
