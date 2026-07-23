@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 
 import {
   cacheDeletionPrompt,
+  getArticlePreview,
   getConnectionState,
+  getExtractionNotice,
+  getPrivacyDisclosure,
   getReportProvenance,
   savedReportCountLabel,
 } from "../src/lib/ui-state.js";
@@ -28,6 +31,84 @@ test("connection states stay consistent with analysis availability", () => {
     canAnalyze: true,
   });
   assert.equal(getConnectionState({ model: "gpt-5.2" }).canAnalyze, false);
+});
+
+test("article and selected-passage previews expose accurate, plain-text counts", () => {
+  const article = {
+    title: "A <b>literal</b> headline",
+    byline: "Reporter",
+    paragraphs: [
+      { id: "p1", text: " First   paragraph. " },
+      { id: "p2", text: "Second paragraph." },
+    ],
+  };
+  assert.deepEqual(getArticlePreview(article, "article"), {
+    eyebrow: "Detected article",
+    title: "A <b>literal</b> headline",
+    excerpt: "",
+    meta: "Reporter · 2 paragraphs",
+  });
+  assert.deepEqual(getArticlePreview(article, "selection"), {
+    eyebrow: "Selected passage",
+    title: "A <b>literal</b> headline",
+    excerpt: "First paragraph. Second paragraph.",
+    meta: "34 characters · 2 paragraphs",
+  });
+});
+
+test("preview defaults and singular labels remain readable for sparse captures", () => {
+  assert.deepEqual(getArticlePreview(null), {
+    eyebrow: "Detected article",
+    title: "Untitled article",
+    excerpt: "",
+    meta: "0 paragraphs",
+  });
+  assert.deepEqual(getArticlePreview({
+    paragraphs: [{ id: "p1", text: "X" }],
+  }, "selection"), {
+    eyebrow: "Selected passage",
+    title: "Selected passage",
+    excerpt: "X",
+    meta: "1 character · 1 paragraph",
+  });
+  assert.equal(
+    getArticlePreview({ title: "", paragraphs: [{ id: "p1" }] }, "selection").excerpt,
+    "",
+  );
+});
+
+test("partial extraction warning applies to entire-article mode only", () => {
+  const partial = {
+    extraction: {
+      status: "partial",
+      notes: ["Reader-mode extraction used a fallback.", "", null],
+    },
+  };
+  assert.deepEqual(getExtractionNotice(partial, "article"), {
+    visible: true,
+    limitations: ["Reader-mode extraction used a fallback."],
+    actionLabel: "Analyze detected text",
+  });
+  assert.deepEqual(getExtractionNotice(partial, "selection"), {
+    visible: false,
+    limitations: [],
+    actionLabel: null,
+  });
+  assert.equal(getExtractionNotice({ extraction: { status: "complete", notes: [] } }).visible, false);
+  assert.deepEqual(getExtractionNotice({ extraction: { status: "partial" } }), {
+    visible: false,
+    limitations: [],
+    actionLabel: null,
+  });
+});
+
+test("privacy disclosure distinguishes a local restore from a new request", () => {
+  assert.match(getPrivacyDisclosure(), /article text, title, byline, and publication date/);
+  assert.match(getPrivacyDisclosure(), /page address stays on this device/);
+  assert.equal(
+    getPrivacyDisclosure({ source: "restored" }),
+    "This saved report was restored locally. Nothing was sent to OpenAI.",
+  );
 });
 
 test("fresh, restored, cleared, and save-failure provenance is explicit", () => {

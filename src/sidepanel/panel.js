@@ -13,7 +13,10 @@ import {
 } from "../lib/request-lifecycle.js";
 import {
   cacheDeletionPrompt,
+  getArticlePreview,
   getConnectionState,
+  getExtractionNotice,
+  getPrivacyDisclosure,
   getReportProvenance,
   savedReportCountLabel,
 } from "../lib/ui-state.js";
@@ -38,19 +41,26 @@ const elements = {
   articleMeta: document.querySelector("#article-meta"),
   articlePreview: document.querySelector("#article-preview"),
   articleTitle: document.querySelector("#article-title"),
+  checkSelection: document.querySelector("#check-selection"),
   changeModel: document.querySelector("#change-model"),
   clearCache: document.querySelector("#clear-cache"),
   clearKey: document.querySelector("#clear-key"),
   cancelAnalysis: document.querySelector("#cancel-analysis"),
+  dataDisclosure: document.querySelector("#data-disclosure"),
   emptyDescription: document.querySelector("#empty-description"),
   emptyState: document.querySelector("#empty-state"),
   emptyTitle: document.querySelector("#empty-title"),
+  extractionLimitations: document.querySelector("#extraction-limitations"),
+  extractionWarning: document.querySelector("#extraction-warning"),
   keyStatus: document.querySelector("#key-status"),
   loadModels: document.querySelector("#load-models"),
   message: document.querySelector("#message"),
   model: document.querySelector("#model"),
   modelStatus: document.querySelector("#model-status"),
+  passagePreview: document.querySelector("#passage-preview"),
+  previewEyebrow: document.querySelector("#preview-eyebrow"),
   progress: document.querySelector("#progress"),
+  progressAnnouncement: document.querySelector("#progress-announcement"),
   progressDetail: document.querySelector("#progress-detail"),
   progressElapsed: document.querySelector("#progress-elapsed"),
   progressTitle: document.querySelector("#progress-title"),
@@ -60,6 +70,7 @@ const elements = {
   settings: document.querySelector("#settings"),
   settingsForm: document.querySelector("#settings-form"),
   settingsToggle: document.querySelector("#settings-toggle"),
+  useSelection: document.querySelector("#use-selection"),
 };
 
 const progressOrder = ["extract", "analyze", "validate", "render"];
@@ -88,6 +99,8 @@ let narrativeTimers = [];
 let progressStartedAt = 0;
 let activeProgressStep = null;
 let refreshTimer;
+let ratingHelpId = 0;
+let settingsReturnFocus = null;
 
 function stopActiveAnalysis(reason = "page_changed", { invalidate = true } = {}) {
   const operation = state.activeAnalysis;
@@ -111,10 +124,14 @@ function sendMessage(message) {
 function setMessage(text = "", isError = false) {
   elements.message.textContent = text;
   elements.message.classList.toggle("error", isError);
+  elements.message.setAttribute("role", isError ? "alert" : "status");
+  elements.message.setAttribute("aria-live", isError ? "assertive" : "polite");
 }
 
 function defaultAnalyzeLabel() {
-  return state.mode === "article" ? "Analyze article" : "Analyze selected text";
+  const extractionNotice = getExtractionNotice(state.article, state.mode);
+  if (extractionNotice.visible) return extractionNotice.actionLabel;
+  return state.mode === "article" ? "Analyze article" : "Analyze selected passage";
 }
 
 function updateAnalyzeUi() {
@@ -137,6 +154,34 @@ function setEmptyState(title, description) {
   elements.emptyDescription.textContent = description;
 }
 
+function updateDisclosure() {
+  elements.dataDisclosure.textContent = getPrivacyDisclosure(state.report);
+}
+
+function renderExtractionNotice(article) {
+  const notice = getExtractionNotice(article, state.mode);
+  elements.extractionWarning.hidden = !notice.visible;
+  elements.extractionLimitations.replaceChildren();
+  for (const limitation of notice.limitations) {
+    const item = document.createElement("li");
+    item.textContent = limitation;
+    elements.extractionLimitations.append(item);
+  }
+}
+
+function renderArticlePreview(article) {
+  const preview = getArticlePreview(article, state.mode);
+  elements.previewEyebrow.textContent = preview.eyebrow;
+  elements.articleTitle.textContent = preview.title;
+  elements.articleMeta.textContent = preview.meta;
+  elements.passagePreview.textContent = preview.excerpt;
+  elements.passagePreview.hidden = !preview.excerpt;
+  elements.articlePreview.hidden = false;
+  elements.emptyState.hidden = true;
+  elements.checkSelection.hidden = true;
+  renderExtractionNotice(article);
+}
+
 function resetPageUi({ needsAccess = false } = {}) {
   stopActiveAnalysis("page_changed");
   state.pageRevision += 1;
@@ -149,13 +194,22 @@ function resetPageUi({ needsAccess = false } = {}) {
   clearProgressTimers();
   elements.progress.hidden = true;
   elements.articlePreview.hidden = true;
+  elements.extractionWarning.hidden = true;
   elements.results.hidden = true;
   elements.emptyState.hidden = false;
+  elements.checkSelection.hidden = true;
+  updateDisclosure();
   if (needsAccess) {
     setEmptyState(
       "Allow LedeLens to read this tab",
       "Select the LedeLens icon in Chrome’s toolbar to connect this page. You don’t need to reload the page. If the icon isn’t visible, open Chrome’s Extensions menu and select LedeLens.",
     );
+  } else if (state.mode === "selection") {
+    setEmptyState(
+      "Select a passage on the page",
+      "Highlight the text you want to examine, then return here.",
+    );
+    elements.checkSelection.hidden = false;
   } else {
     setEmptyState(
       "Inspect this article's reasoning",
@@ -192,6 +246,7 @@ function formatDiagnostics(diagnostics) {
 }
 
 function setProgress(step, title, detail) {
+  const stageChanged = activeProgressStep !== step;
   activeProgressStep = step;
   const activeIndex = progressOrder.indexOf(step);
   document.querySelectorAll("[data-progress-step]").forEach((element) => {
@@ -201,6 +256,7 @@ function setProgress(step, title, detail) {
   });
   elements.progressTitle.textContent = title;
   elements.progressDetail.textContent = detail;
+  if (stageChanged) elements.progressAnnouncement.textContent = title;
 }
 
 function startProgress() {
@@ -236,6 +292,7 @@ function completeProgress() {
   elements.progressTitle.textContent = "Analysis ready";
   elements.progressDetail.textContent = "The report passed local validation and is ready to review.";
   elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
+  elements.progressAnnouncement.textContent = "Analysis ready";
   setTimeout(() => {
     if (!progressInterval && !elements.progress.classList.contains("failed")) elements.progress.hidden = true;
   }, 1200);
@@ -248,6 +305,7 @@ function failProgress() {
   elements.progressTitle.textContent = "Analysis stopped";
   elements.progressDetail.textContent = "See the error below. Your article page was not changed.";
   elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
+  elements.progressAnnouncement.textContent = "";
 }
 
 function cancelProgress(reason = "user_cancelled") {
@@ -375,11 +433,7 @@ async function extract(expectedRevision = state.pageRevision) {
 
   state.article = article;
   state.articleFingerprint = fingerprintArticle(article);
-  elements.articleTitle.textContent = article.title;
-  const details = [article.byline, `${article.paragraphs.length} paragraphs`].filter(Boolean);
-  elements.articleMeta.textContent = details.join(" · ");
-  elements.articlePreview.hidden = false;
-  elements.emptyState.hidden = true;
+  renderArticlePreview(article);
   state.pageReady = true;
   updateAnalyzeUi();
   return article;
@@ -401,6 +455,7 @@ async function loadCachedAnalysis(article, expectedRevision) {
     persisted: true,
   };
   renderResults(cached.result, state.report);
+  updateDisclosure();
   updateAnalyzeUi();
   setMessage("");
   return true;
@@ -457,7 +512,21 @@ function paragraphLinks(ids) {
     button.className = "paragraph-link";
     button.type = "button";
     button.textContent = id;
-    button.addEventListener("click", () => runContentFunction("highlight", id).catch((error) => setMessage(error.message, true)));
+    const paragraphNumber = id.replace(/^p/, "");
+    button.setAttribute("aria-label", `Highlight source paragraph ${paragraphNumber}`);
+    button.addEventListener("click", async () => {
+      try {
+        const highlighted = await runContentFunction("highlight", id);
+        setMessage(
+          highlighted
+            ? `Highlighted source paragraph ${paragraphNumber}.`
+            : `Source paragraph ${paragraphNumber} is no longer available on the page.`,
+          !highlighted,
+        );
+      } catch (error) {
+        setMessage(`Could not highlight source paragraph ${paragraphNumber}: ${error.message}`, true);
+      }
+    });
     container.append(button);
   }
   return container;
@@ -502,6 +571,16 @@ function renderReportProvenance(report) {
   return container;
 }
 
+function closeRatingHelp(exceptButton = null, { returnFocus = false } = {}) {
+  document.querySelectorAll(".rating-help-button[aria-expanded='true']").forEach((button) => {
+    if (button === exceptButton) return;
+    button.setAttribute("aria-expanded", "false");
+    const popover = document.querySelector(`#${CSS.escape(button.getAttribute("aria-controls"))}`);
+    if (popover) popover.hidden = true;
+    if (returnFocus) button.focus();
+  });
+}
+
 function ratingHelp(title, ratings, activeValue) {
   const wrapper = document.createElement("span");
   wrapper.className = "rating-help";
@@ -511,13 +590,22 @@ function ratingHelp(title, ratings, activeValue) {
   button.type = "button";
   button.textContent = "?";
   button.setAttribute("aria-label", `Explain ${title.toLowerCase()} ratings`);
+  button.setAttribute("aria-expanded", "false");
 
   const popover = document.createElement("span");
   popover.className = "rating-popover";
-  popover.setAttribute("role", "tooltip");
+  popover.id = `rating-help-${++ratingHelpId}`;
+  popover.hidden = true;
+  popover.setAttribute("role", "region");
+  popover.setAttribute("aria-label", `${title} rating guide`);
+  button.setAttribute("aria-controls", popover.id);
 
   const heading = document.createElement("strong");
   heading.textContent = title;
+  const activeRating = ratings.find((rating) => rating.value === activeValue);
+  const current = document.createElement("span");
+  current.className = "current-rating";
+  current.textContent = `Current rating: ${activeRating?.label || activeValue}.`;
   const list = document.createElement("span");
   list.className = "rating-options";
 
@@ -536,7 +624,22 @@ function ratingHelp(title, ratings, activeValue) {
     list.append(option);
   }
 
-  popover.append(heading, list);
+  button.addEventListener("click", () => {
+    const willOpen = button.getAttribute("aria-expanded") !== "true";
+    closeRatingHelp(button);
+    button.setAttribute("aria-expanded", String(willOpen));
+    popover.hidden = !willOpen;
+  });
+
+  button.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || button.getAttribute("aria-expanded") !== "true") return;
+    event.stopPropagation();
+    button.setAttribute("aria-expanded", "false");
+    popover.hidden = true;
+    button.focus();
+  });
+
+  popover.append(heading, current, list);
   wrapper.append(button, popover);
   return wrapper;
 }
@@ -641,6 +744,8 @@ function renderConclusion(result) {
 
 function renderResults(result, report) {
   state.result = result;
+  state.report = report;
+  updateDisclosure();
   elements.results.replaceChildren(
     renderReportProvenance(report),
     renderAssessment(result),
@@ -654,7 +759,7 @@ function renderResults(result, report) {
 async function analyze() {
   stopActiveAnalysis("superseded");
   if (!getConnectionState(state.settings || {}).canAnalyze) {
-    elements.settings.hidden = false;
+    setSettingsOpen(true, { focus: true });
     setMessage("Complete the OpenAI connection before starting an analysis.", true);
     return;
   }
@@ -739,7 +844,7 @@ async function analyze() {
       failProgress();
       setMessage(error.message, true);
     }
-    if (!state.settings?.hasApiKey) elements.settings.hidden = false;
+    if (!getConnectionState(state.settings || {}).canAnalyze) setSettingsOpen(true);
   } finally {
     if (state.activeAnalysis === operation) {
       state.activeAnalysis = null;
@@ -748,19 +853,73 @@ async function analyze() {
   }
 }
 
-document.querySelectorAll(".mode").forEach((button) => {
-  button.addEventListener("click", () => {
-    const stopped = stopActiveAnalysis("mode_changed");
-    state.mode = button.dataset.mode;
-    document.querySelectorAll(".mode").forEach((candidate) => candidate.classList.toggle("active", candidate === button));
-    refreshCurrentPage().then(() => {
-      if (stopped) setMessage("Analysis stopped because you changed the analysis source.");
-    });
+function setMode(mode, { focus = false } = {}) {
+  if (!["article", "selection"].includes(mode)) return;
+  const stopped = stopActiveAnalysis("mode_changed");
+  state.mode = mode;
+  document.querySelectorAll(".mode").forEach((candidate) => {
+    const selected = candidate.dataset.mode === mode;
+    candidate.classList.toggle("active", selected);
+    candidate.setAttribute("aria-checked", String(selected));
+    candidate.tabIndex = selected ? 0 : -1;
+    if (selected && focus) candidate.focus();
+  });
+  refreshCurrentPage().then(() => {
+    if (stopped) setMessage("Analysis stopped because you changed the analysis source.");
+  });
+}
+
+function setSettingsOpen(open, { focus = false, returnFocus = false } = {}) {
+  if (open && elements.settings.hidden) settingsReturnFocus = document.activeElement;
+  elements.settings.hidden = !open;
+  elements.settingsToggle.setAttribute("aria-expanded", String(open));
+  elements.settingsToggle.setAttribute("aria-label", open ? "Close settings" : "Open settings");
+  if (open && focus) elements.settings.focus();
+  if (!open && returnFocus) (settingsReturnFocus || elements.settingsToggle).focus();
+}
+
+document.querySelectorAll(".mode").forEach((button, index, buttons) => {
+  button.addEventListener("click", () => setMode(button.dataset.mode));
+  button.addEventListener("keydown", (event) => {
+    const keys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+    const direction = ["ArrowRight", "ArrowDown"].includes(event.key) ? 1 : -1;
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? buttons.length - 1
+        : (index + direction + buttons.length) % buttons.length;
+    setMode(buttons[nextIndex].dataset.mode, { focus: true });
   });
 });
 
+elements.checkSelection.addEventListener("click", refreshCurrentPage);
+elements.useSelection.addEventListener("click", () => setMode("selection", { focus: true }));
+
 elements.settingsToggle.addEventListener("click", () => {
-  elements.settings.hidden = !elements.settings.hidden;
+  setSettingsOpen(elements.settings.hidden, { focus: elements.settings.hidden, returnFocus: !elements.settings.hidden });
+});
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".rating-help")) closeRatingHelp();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  const expandedHelp = document.querySelector(".rating-help-button[aria-expanded='true']");
+  if (expandedHelp) {
+    closeRatingHelp(null, { returnFocus: true });
+  } else if (!elements.settings.hidden) {
+    setSettingsOpen(false, { returnFocus: true });
+  }
+});
+
+window.addEventListener("focus", () => {
+  if (state.mode === "selection" && elements.progress.hidden) {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(refreshCurrentPage, 100);
+  }
 });
 
 elements.settingsForm.addEventListener("submit", async (event) => {
@@ -773,7 +932,7 @@ elements.settingsForm.addEventListener("submit", async (event) => {
     });
     elements.apiKey.value = "";
     updateSettingsUi();
-    elements.settings.hidden = true;
+    setSettingsOpen(false, { returnFocus: true });
     setMessage(`Connected to OpenAI with ${state.settings.model}.`);
   } catch (error) {
     setMessage(error.message, true);
@@ -786,7 +945,7 @@ elements.clearKey.addEventListener("click", async () => {
     state.settings = await sendMessage({ type: "CLEAR_API_KEY" });
     resetModelOptions();
     updateSettingsUi();
-    elements.settings.hidden = false;
+    setSettingsOpen(true);
     setMessage("Session API key deleted. Saved reports remain on this device.");
   } catch (error) {
     setMessage(error.message, true);
@@ -869,7 +1028,7 @@ async function initialize() {
     state.settings = settings;
     updateDataStatus(dataStatus.savedReportCount);
     updateSettingsUi();
-    elements.settings.hidden = getConnectionState(state.settings || {}).canAnalyze;
+    setSettingsOpen(!getConnectionState(state.settings || {}).canAnalyze);
   } catch (error) {
     setMessage(error.message, true);
   }
