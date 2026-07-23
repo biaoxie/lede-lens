@@ -59,6 +59,22 @@
         </div>
 
         <button id="analyze" class="primary full" type="button">Analyze article</button>
+        <div id="progress" class="progress" role="status" aria-live="polite" hidden>
+          <div class="progress-heading">
+            <span class="spinner" aria-hidden="true"></span>
+            <div>
+              <strong id="progress-title">Reading the article</strong>
+              <span id="progress-elapsed">0:00</span>
+            </div>
+          </div>
+          <p id="progress-detail">Finding the main article and preserving source links.</p>
+          <ol class="progress-steps" aria-label="Analysis progress">
+            <li data-progress-step="extract">Extract source</li>
+            <li data-progress-step="analyze">Analyze structure</li>
+            <li data-progress-step="validate">Validate report</li>
+            <li data-progress-step="render">Render findings</li>
+          </ol>
+        </div>
         <p id="message" class="message" role="status" aria-live="polite"></p>
       </section>
 

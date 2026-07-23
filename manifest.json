@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "LedeLens",
   "description": "Audit the internal claim, evidence, causality, and framing structure of news articles.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "minimum_chrome_version": "116",
   "permissions": ["activeTab", "scripting", "sidePanel", "storage"],
   "host_permissions": ["https://api.openai.com/*"],

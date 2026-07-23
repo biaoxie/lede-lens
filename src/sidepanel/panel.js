@@ -1,4 +1,5 @@
 import { MODEL_CATALOG } from "../lib/models.js";
+import { analyzeArticle } from "../lib/openai.js";
 
 const state = {
   mode: "article",
@@ -17,11 +18,21 @@ const elements = {
   keyStatus: document.querySelector("#key-status"),
   message: document.querySelector("#message"),
   model: document.querySelector("#model"),
+  progress: document.querySelector("#progress"),
+  progressDetail: document.querySelector("#progress-detail"),
+  progressElapsed: document.querySelector("#progress-elapsed"),
+  progressTitle: document.querySelector("#progress-title"),
   results: document.querySelector("#results"),
   settings: document.querySelector("#settings"),
   settingsForm: document.querySelector("#settings-form"),
   settingsToggle: document.querySelector("#settings-toggle"),
 };
+
+const progressOrder = ["extract", "analyze", "validate", "render"];
+let progressInterval;
+let narrativeTimers = [];
+let progressStartedAt = 0;
+let activeProgressStep = null;
 
 function sendMessage(message) {
   return chrome.runtime.sendMessage(message).then((response) => {
@@ -33,6 +44,76 @@ function sendMessage(message) {
 function setMessage(text = "", isError = false) {
   elements.message.textContent = text;
   elements.message.classList.toggle("error", isError);
+}
+
+function clearProgressTimers() {
+  clearInterval(progressInterval);
+  progressInterval = null;
+  narrativeTimers.forEach(clearTimeout);
+  narrativeTimers = [];
+}
+
+function formatElapsed(milliseconds) {
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, "0")}`;
+}
+
+function setProgress(step, title, detail) {
+  activeProgressStep = step;
+  const activeIndex = progressOrder.indexOf(step);
+  document.querySelectorAll("[data-progress-step]").forEach((element) => {
+    const index = progressOrder.indexOf(element.dataset.progressStep);
+    element.classList.toggle("complete", index < activeIndex);
+    element.classList.toggle("active", index === activeIndex);
+  });
+  elements.progressTitle.textContent = title;
+  elements.progressDetail.textContent = detail;
+}
+
+function startProgress() {
+  clearProgressTimers();
+  progressStartedAt = Date.now();
+  elements.progress.hidden = false;
+  elements.progress.classList.remove("failed");
+  elements.progressElapsed.textContent = "0:00";
+  setProgress("extract", "Reading the article", "Finding the main article and preserving source links.");
+  progressInterval = setInterval(() => {
+    elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
+  }, 1000);
+}
+
+function narrateModelWait(paragraphCount) {
+  const updates = [
+    [6_000, `OpenAI is working through ${paragraphCount} source paragraphs. This can take a minute.`],
+    [16_000, "Still working—checking claims, evidence, causal links, and missing context."],
+    [32_000, "Still working. Deeper reasoning may take longer; LedeLens has not timed out."],
+    [60_000, "Waiting for OpenAI to finish the structured report. You can keep reading this tab."],
+  ];
+  narrativeTimers = updates.map(([delay, detail]) => setTimeout(() => {
+    if (activeProgressStep === "analyze") elements.progressDetail.textContent = detail;
+  }, delay));
+}
+
+function completeProgress() {
+  clearProgressTimers();
+  document.querySelectorAll("[data-progress-step]").forEach((element) => {
+    element.classList.add("complete");
+    element.classList.remove("active");
+  });
+  elements.progressTitle.textContent = "Analysis ready";
+  elements.progressDetail.textContent = "The report passed local validation and is ready to review.";
+  elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
+  setTimeout(() => {
+    if (!progressInterval && !elements.progress.classList.contains("failed")) elements.progress.hidden = true;
+  }, 1200);
+}
+
+function failProgress() {
+  clearProgressTimers();
+  elements.progress.classList.add("failed");
+  elements.progressTitle.textContent = "Analysis stopped";
+  elements.progressDetail.textContent = "See the error below. Your article page was not changed.";
+  elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
 }
 
 function updateSettingsUi() {
@@ -236,14 +317,29 @@ function renderResults(result) {
 async function analyze() {
   elements.analyze.disabled = true;
   elements.results.hidden = true;
-  setMessage("Extracting the visible article…");
+  setMessage("");
+  startProgress();
   try {
     const article = await extract();
-    setMessage("Auditing claims, evidence, causality, and framing…");
-    const result = await sendMessage({ type: "ANALYZE", payload: { article } });
+    setProgress(
+      "analyze",
+      "Analyzing article structure",
+      `Prepared ${article.paragraphs.length} source paragraphs and sending them to OpenAI.`,
+    );
+    narrateModelWait(article.paragraphs.length);
+    const { result } = await analyzeArticle(article, ({ type }) => {
+      if (type === "response_received") {
+        setProgress("validate", "Checking the model response", "OpenAI responded. Parsing and validating the report locally.");
+      } else if (type === "validating") {
+        setProgress("validate", "Validating every reference", "Checking the schema, claim links, and paragraph references.");
+      }
+    });
+    setProgress("render", "Building the report", "Organizing the assessment, metrics, claims, and source links.");
     renderResults(result);
+    completeProgress();
     setMessage("");
   } catch (error) {
+    failProgress();
     setMessage(error.message, true);
     if (!state.settings?.hasApiKey) elements.settings.hidden = false;
   } finally {

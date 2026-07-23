@@ -47,7 +47,7 @@ For a normal news article:
 
 1. Choose **Full article**.
 2. Select **Analyze article**.
-3. Wait for the structural audit to appear.
+3. Follow the live progress card as LedeLens extracts the source, waits for OpenAI, validates the response, and renders the report.
 4. Select any paragraph badge such as `p4` to scroll to and highlight that source paragraph.
 
 For a specific passage:

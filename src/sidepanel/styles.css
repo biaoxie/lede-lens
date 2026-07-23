@@ -163,6 +163,60 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid rgba(184, 7
 .message { min-height: 18px; margin: 9px 0 0; text-align: center; }
 .message.error { color: var(--red); }
 
+.progress {
+  margin-top: 12px;
+  padding: 13px;
+  border: 1px solid #d7c4b3;
+  border-radius: 4px;
+  background: #faf3e8;
+}
+.progress-heading { display: flex; align-items: center; gap: 10px; }
+.progress-heading > div { display: flex; flex: 1; justify-content: space-between; gap: 8px; }
+.progress-heading strong { font-family: Georgia, "Times New Roman", serif; font-size: 15px; }
+#progress-elapsed { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+#progress-detail { margin: 7px 0 10px 24px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ddc8b7;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.progress-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.progress-steps li {
+  position: relative;
+  padding-left: 15px;
+  color: #989188;
+  font-size: 10px;
+  font-weight: 700;
+}
+.progress-steps li::before {
+  position: absolute;
+  top: 0.38em;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #c9bfb3;
+  border-radius: 50%;
+  content: "";
+}
+.progress-steps li.active { color: var(--accent-dark); }
+.progress-steps li.active::before { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 0 3px #f2dcd0; }
+.progress-steps li.complete { color: var(--green); }
+.progress-steps li.complete::before { border-color: var(--green); background: var(--green); }
+.progress.failed { border-color: #d9aaa2; background: #fbebe7; }
+.progress.failed .spinner { border-color: #e1b8b1; border-top-color: var(--red); animation: none; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
 .assessment {
   padding: 18px;
   border-top: 5px solid var(--accent);

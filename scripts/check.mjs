@@ -9,6 +9,7 @@ const requiredFiles = [
   "manifest.json",
   "src/background.js",
   "src/content.js",
+  "src/lib/openai.js",
   "node_modules/@mozilla/readability/Readability.js",
   "src/sidepanel/index.html",
   "src/sidepanel/panel.js",
@@ -22,6 +23,7 @@ await Promise.all(requiredFiles.map((file) => access(file)));
 const manifest = JSON.parse(await readFile("manifest.json", "utf8"));
 const packageMetadata = JSON.parse(await readFile("package.json", "utf8"));
 const backgroundSource = await readFile("src/background.js", "utf8");
+const openaiSource = await readFile("src/lib/openai.js", "utf8");
 assert.equal(manifest.manifest_version, 3);
 assert.equal(manifest.name, "LedeLens");
 assert.equal(manifest.version, packageMetadata.version, "Manifest and package versions must match.");
@@ -30,6 +32,8 @@ assert.ok(manifest.permissions.includes("storage"));
 assert.ok(!manifest.permissions.includes("tabs"), "Avoid broad tabs permission.");
 assert.match(backgroundSource, /chrome\.action\.onClicked\.addListener/);
 assert.match(backgroundSource, /openPanelOnActionClick: false/);
+assert.doesNotMatch(backgroundSource, /api\.openai\.com/, "Long OpenAI requests must not run in the service worker.");
+assert.match(openaiSource, /X-Client-Request-Id/);
 
 const contentSource = await readFile("src/content.js", "utf8");
 assert.match(contentSource, /new globalThis\.Readability\(document\.cloneNode\(true\)/);
@@ -45,6 +49,7 @@ const sourceFiles = [
   "src/background.js",
   "src/content.js",
   "src/lib/models.js",
+  "src/lib/openai.js",
   "src/lib/validator.js",
   "src/sidepanel/panel.js",
   "scripts/check.mjs",

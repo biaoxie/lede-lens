@@ -22,7 +22,7 @@ LedeLens is an early proof of concept. The first release:
 
 - runs as a Chrome Manifest V3 side panel;
 - analyzes a full article or selected text;
-- calls the OpenAI Responses API directly from the extension service worker;
+- calls the OpenAI Responses API directly from the persistent side panel;
 - offers GPT-5.6 Sol, Terra, and Luna plus GPT-5.4 model choices;
 - stores the OpenAI API key in `chrome.storage.session`, which Chrome clears when the browser session ends;
 - validates every model result locally against JSON Schema before rendering it.
@@ -42,7 +42,7 @@ article page
   -> Mozilla Readability extracts the article from a cloned page
   -> isolated content script maps the coherent reader result and stable paragraph IDs back to the live page
   -> side panel requests an analysis
-  -> service worker reads the session-only API key
+  -> persistent side panel reads the session-only API key
   -> OpenAI Responses API returns Structured Outputs
   -> local schema and reference validation
   -> side panel renders claims, metrics, issues, and paragraph links
@@ -63,6 +63,8 @@ Direct browser-to-provider calls are a deliberate proof-of-concept tradeoff. Led
 - sets `store: false` on OpenAI Responses API requests.
 
 A browser extension remains a sensitive place for a provider credential. Review [SECURITY.md](SECURITY.md) before using LedeLens with a valuable or broadly privileged key. A production distribution should consider a scoped token broker or local companion.
+
+Long-running model requests execute in the open side panel rather than the Manifest V3 service worker. This avoids Chrome's service-worker fetch timeout while keeping credentials inside extension contexts and out of article pages. Each OpenAI call includes a unique client request ID so network failures can be traced without exposing the API key.
 
 ## Development
 
@@ -85,8 +87,9 @@ Mozilla Readability is the only runtime package dependency. It runs locally agai
 
 ```text
 manifest.json                         Chrome extension manifest
-src/background.js                    OpenAI request and credential boundary
+src/background.js                    Settings, session credential storage, and side-panel lifecycle
 src/content.js                       Reader-mode extraction, source mapping, and highlighting
+src/lib/openai.js                    OpenAI request, tracing, parsing, and local validation
 src/lib/validator.js                 Local schema and reference validation
 src/sidepanel/                        Side panel UI
 skills/analyze-news-structure/        Provider-neutral analysis contract
