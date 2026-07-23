@@ -16,6 +16,7 @@ const files = listing.stdout
   .filter((file) => file && !file.endsWith("/"));
 
 const requiredFiles = [
+  "INSTALL.md",
   "manifest.json",
   ...Object.values(manifest.icons),
   "src/background.js",
@@ -37,6 +38,7 @@ for (const file of requiredFiles) {
 for (const file of files) {
   assert.ok(
     file === "manifest.json"
+      || file === "INSTALL.md"
       || file.startsWith("assets/icons/")
       || file.startsWith("src/")
       || file === "skills/analyze-news-structure/assets/system-prompt.md"

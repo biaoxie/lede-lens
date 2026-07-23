@@ -13,6 +13,7 @@ const stagingRoot = await mkdtemp(join(tmpdir(), "ledelens-release-"));
 const stagingDirectory = join(stagingRoot, "extension");
 
 const releaseFiles = [
+  "INSTALL.md",
   "manifest.json",
   "assets/icons/icon-16.png",
   "assets/icons/icon-32.png",
