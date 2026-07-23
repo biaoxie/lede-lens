@@ -26,7 +26,38 @@ const issueLabels: Record<string, string> = {
   selection_ambiguity: "Unclear selection",
   scope_shift: "Conclusion outruns the evidence",
   fact_commentary_blend: "Reporting and commentary blend",
+  missing_baseline_or_denominator: "Missing baseline or denominator",
+  unsupported_causation: "Cause not demonstrated",
   one_sided_sourcing: "One-sided emphasis",
+};
+
+const verdictLabels: Record<string, string> = {
+  structurally_solid: "Well supported",
+  mostly_supported: "Mostly supported",
+  evidence_limited: "Limited support",
+  severely_under_supported: "Very little support",
+};
+
+const verdictSummaries: Record<string, string> = {
+  structurally_solid: "The article presents strong support for its main takeaway.",
+  mostly_supported: "The article presents reasonable support for its main takeaway, with some important limits.",
+  evidence_limited: "The article's main takeaway goes beyond the support it presents.",
+  severely_under_supported: "The article presents very little support for a major takeaway.",
+};
+
+const presentationStyleLabels: Record<string, string> = {
+  restrained: "Restrained",
+  interpretive: "Interpretive",
+  framing_heavy: "Framing heavy",
+  manipulation_risk_signals: "Manipulation risk signals",
+};
+
+const metricResultLabels: Record<string, Record<string, string>> = {
+  evidence_coverage: { present: "Strong support", partial: "Some support", missing: "Very little support" },
+  source_traceability: { present: "Clear", partial: "Partly clear", missing: "Unclear" },
+  causal_support: { present: "Supported", partial: "Partly supported", missing: "Not supported" },
+  context_completeness: { present: "Enough context", partial: "Some important gaps", missing: "Major gaps" },
+  framing_uncertainty_separation: { present: "Clearly distinguished", partial: "Sometimes blurred", missing: "Blurred" },
 };
 
 const articles = {
@@ -36,6 +67,7 @@ const articles = {
     title: "City library extends weekend hours",
     dek: "Attendance records and a visitor survey supported the change, while officials said seasonal events may also have influenced the results.",
     analysis: restrainedAnalysis,
+    timing: "OpenAI first output 2.2s · total 7.3s · 0 reasoning tokens",
     paragraphs: [
       "The Arbor City Library will make later Saturday hours permanent after a six-month pilot, extending service until 8 p.m. beginning next month.",
       "The library board approved the schedule after reviewing pilot attendance, visitor feedback, and the cost of keeping the building open for three additional hours.",
@@ -55,6 +87,7 @@ const articles = {
     title: "City wastes $46,000 a year on library hours backed by just 462 survey responses",
     dek: "A modest attendance increase and feedback from a tiny share of the city are being used to justify another permanent taxpayer expense.",
     analysis: wasteFramingAnalysis,
+    timing: "OpenAI total 12.0s",
     paragraphs: [
       "Arbor City officials have decided to spend an additional $46,000 every year to keep the public library open three hours later on Saturdays.",
       "The city is presenting the decision as a response to community demand. But only about 462 survey respondents said they wanted the later schedule to continue in a city of approximately 85,000 residents.",
@@ -209,12 +242,11 @@ function ResultsPanel({
   onReset: () => void;
 }) {
   const analysis = article.analysis;
-  const isRestrained = analysis.structural_assessment.evidence_structure === "structurally_solid";
-  const rating = isRestrained ? "Well supported" : "Evidence limited";
-  const ratingSummary = isRestrained
-    ? "The article presents strong support for its main takeaway."
-    : "The article's main takeaway goes beyond the support it presents.";
-  const style = isRestrained ? "Restrained" : "Manipulation risk signals";
+  const verdict = analysis.structural_assessment.evidence_structure;
+  const isRestrained = verdict === "structurally_solid";
+  const rating = verdictLabels[verdict];
+  const ratingSummary = verdictSummaries[verdict];
+  const style = presentationStyleLabels[analysis.structural_assessment.presentation_style];
   const strongMetrics = Object.values(analysis.article_metrics).filter((metric) => metric.status === "present").length;
 
   return (
@@ -227,7 +259,7 @@ function ResultsPanel({
       </section>
       <p className="demo-data-note">This demo loads a saved LedeLens result. It does not call the OpenAI API or send article text. The Chrome extension uses your OpenAI API key, sends extracted article text and metadata to OpenAI when you analyze, and OpenAI charges may apply.</p>
       <button className="analyze-button" type="button" onClick={onAnalyze}>Re-analyze article</button>
-      <p className="demo-data-note">Saved result timing: OpenAI first output 2.2s · total 7.3s · 0 reasoning tokens.</p>
+      <p className="demo-data-note">Saved result timing: {article.timing}.</p>
       <section className="overall-card">
         <p className="panel-eyebrow">How well does this article support its main takeaway?</p>
         <div className={`overall-rating ${isRestrained ? "" : "warning"}`}>
@@ -261,7 +293,7 @@ function ResultsPanel({
                 <h3>{metricLabels[name]}</h3>
                 <span className={`metric-status ${metric.status}`}>
                   <StatusDot tone={metric.status === "present" ? "green" : metric.status === "missing" ? "red" : "amber"} />
-                  {statusLabels[metric.status]}
+                  {metricResultLabels[name]?.[metric.status] ?? statusLabels[metric.status]}
                 </span>
               </div>
               <p>{metric.rationale}</p>

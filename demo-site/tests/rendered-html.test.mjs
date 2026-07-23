@@ -78,8 +78,10 @@ test("ships a complete, static analysis fixture and social card", async () => {
   assert.equal(fixture.issues[0].severity, "medium");
   assert.equal(wasteFramingFixture.schema_version, "0.2.0");
   assert.equal(wasteFramingFixture.structural_assessment.evidence_structure, "evidence_limited");
-  assert.equal(wasteFramingFixture.structural_assessment.presentation_style, "manipulation_risk_signals");
-  assert.equal(wasteFramingFixture.article_metrics.framing_uncertainty_separation.status, "missing");
+  assert.equal(wasteFramingFixture.structural_assessment.presentation_style, "framing_heavy");
+  assert.equal(wasteFramingFixture.article_metrics.causal_support.status, "missing");
+  assert.equal(wasteFramingFixture.article_metrics.context_completeness.status, "missing");
+  assert.equal(wasteFramingFixture.article_metrics.framing_uncertainty_separation.status, "partial");
   assert.equal(wasteFramingFixture.issues.length, 3);
   const referencedParagraphs = [
     ...Object.values(fixture.article_metrics).flatMap((metric) => metric.paragraph_ids),
@@ -92,10 +94,11 @@ test("ships a complete, static analysis fixture and social card", async () => {
   ];
   assert.ok(wasteFramingParagraphs.every((id) => /^p(?:[1-9]|10)$/.test(id)));
   assert.match(componentSource, /Chrome extension uses your OpenAI API key/);
-  assert.match(componentSource, /City pours more taxpayer money into late-night library hours/);
+  assert.match(componentSource, /City wastes \$46,000 a year on library hours/);
   assert.match(componentSource, /Same reported facts\. Different framing\./);
   assert.match(componentSource, /10 paragraphs/);
-  assert.match(componentSource, /Saved result timing: OpenAI first output 2\.2s · total 7\.3s · 0 reasoning tokens/);
+  assert.match(componentSource, /OpenAI first output 2\.2s · total 7\.3s · 0 reasoning tokens/);
+  assert.match(componentSource, /OpenAI total 12\.0s/);
   assert.match(componentSource, /Schema 0\.2\.0/);
   await access(new URL("../public/og.png", import.meta.url));
 });
