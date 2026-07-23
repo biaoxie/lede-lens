@@ -1,0 +1,230 @@
+{
+  "schema_version": "0.1.0",
+  "language": "en",
+  "extraction_assessment": {
+    "status": "partial",
+    "limitations": [
+      "The supplied text contains subscription prompts, related-story links, image captions, and video-player text; paragraph IDs refer only to the 33 substantive article paragraphs in their original order.",
+      "The independent and state autopsy reports, toxicology results, linked coverage, video content, and underlying investigative records are not included.",
+      "It is not stated whether the pasted text includes every element of the published article."
+    ]
+  },
+  "claims": [
+    {
+      "id": "c1",
+      "text": "The family-commissioned autopsy classified both the cause and manner of Nolan Wells' death as undetermined pending investigation.",
+      "type": "attributed",
+      "speaker": "Independent autopsy report, as described in the article",
+      "paragraph_ids": ["p1"]
+    },
+    {
+      "id": "c2",
+      "text": "The pathologist could not rule out foul play.",
+      "type": "attributed",
+      "speaker": "Dr. Roger Mitchell, relayed by Ben Crump",
+      "paragraph_ids": ["p2"]
+    },
+    {
+      "id": "c3",
+      "text": "The second autopsy found red discoloration on the back of Wells' head.",
+      "type": "attributed",
+      "speaker": "Independent autopsy report, relayed by Ben Crump",
+      "paragraph_ids": ["p3"]
+    },
+    {
+      "id": "c4",
+      "text": "The independent examination had evidentiary gaps because body parts were missing and procedures were incomplete by the time it was performed.",
+      "type": "attributed",
+      "speaker": "Ben Crump's characterization of the independent autopsy report",
+      "paragraph_ids": ["p3"]
+    },
+    {
+      "id": "c5",
+      "text": "The independent autopsy did not include a toxicology report.",
+      "type": "attributed",
+      "speaker": "Ben Crump",
+      "paragraph_ids": ["p6"]
+    },
+    {
+      "id": "c6",
+      "text": "The county autopsy results had not been released and the state report remained unfinished while toxicology was pending.",
+      "type": "attributed",
+      "speaker": "Jackson County coroner's office and Coroner Bruce Lynd",
+      "paragraph_ids": ["p8", "p9"]
+    },
+    {
+      "id": "c7",
+      "text": "Mitchell could not determine whether Wells was conscious when he entered the water or how he entered it.",
+      "type": "attributed",
+      "speaker": "Independent autopsy report",
+      "paragraph_ids": ["p10"]
+    },
+    {
+      "id": "c8",
+      "text": "Because the state autopsy had removed and dissected the organs, Mitchell could not directly inspect the lungs for water intake or the stomach contents.",
+      "type": "causal",
+      "speaker": "Ben Crump",
+      "paragraph_ids": ["p11"]
+    },
+    {
+      "id": "c9",
+      "text": "Decomposition prevented a determination about bruising, while the report noted no apparent lacerations or fractures.",
+      "type": "attributed",
+      "speaker": "Independent autopsy report, relayed by Ben Crump",
+      "paragraph_ids": ["p12"]
+    },
+    {
+      "id": "c10",
+      "text": "Parts of Wells' throat were absent when Mitchell received the body, so he could not rule out neck injury as a contributing factor or cause of death.",
+      "type": "attributed",
+      "speaker": "Dr. Roger Mitchell's report, quoted by Ben Crump",
+      "paragraph_ids": ["p17", "p18"]
+    },
+    {
+      "id": "c11",
+      "text": "Wells' family rejected the suggestion that he drowned, citing his swimming ability, athletic build, and their view that the account did not add up.",
+      "type": "attributed",
+      "speaker": "Wells' parents and Ben Crump",
+      "paragraph_ids": ["p26"]
+    },
+    {
+      "id": "c12",
+      "text": "People familiar with Horn Island said that a current could plausibly have pulled Wells away and caused drowning, especially on the island's western side.",
+      "type": "attributed",
+      "speaker": "People familiar with Horn Island interviewed by NBC News",
+      "paragraph_ids": ["p27"]
+    },
+    {
+      "id": "c13",
+      "text": "Crump implied that the United Cajun Navy told the family Wells was found wearing a T-shirt as well as swim trunks.",
+      "type": "attributed",
+      "speaker": "Ben Crump",
+      "paragraph_ids": ["p28"]
+    },
+    {
+      "id": "c14",
+      "text": "A United Cajun Navy representative said he observed Wells' body wearing only swim trunks and accused Crump of misrepresenting the agency's statements.",
+      "type": "attributed",
+      "speaker": "Brian Trascher of the United Cajun Navy",
+      "paragraph_ids": ["p29", "p30"]
+    },
+    {
+      "id": "c15",
+      "text": "Wells was last seen on July 4 after staying on the island, was reported missing around midnight, and was found dead on July 6.",
+      "type": "descriptive",
+      "speaker": null,
+      "paragraph_ids": ["p13", "p14", "p15"]
+    }
+  ],
+  "relationships": [
+    {
+      "from_claim_id": "c4",
+      "to_claim_id": "c1",
+      "type": "explains",
+      "paragraph_ids": ["p1", "p3"],
+      "rationale": "The described limitations help explain why the second autopsy did not reach a determinate cause or manner of death."
+    },
+    {
+      "from_claim_id": "c5",
+      "to_claim_id": "c1",
+      "type": "explains",
+      "paragraph_ids": ["p1", "p6"],
+      "rationale": "The absence of toxicology evidence is another stated limitation on the independent determination."
+    },
+    {
+      "from_claim_id": "c7",
+      "to_claim_id": "c1",
+      "type": "supports",
+      "paragraph_ids": ["p1", "p10"],
+      "rationale": "The unresolved circumstances of water entry are consistent with the report's undetermined classification."
+    },
+    {
+      "from_claim_id": "c8",
+      "to_claim_id": "c1",
+      "type": "explains",
+      "paragraph_ids": ["p1", "p11"],
+      "rationale": "The inability to inspect the lungs and stomach limits conclusions about what happened before or during water entry."
+    },
+    {
+      "from_claim_id": "c9",
+      "to_claim_id": "c2",
+      "type": "qualifies",
+      "paragraph_ids": ["p2", "p12"],
+      "rationale": "The examination could not assess bruising, but it also reported no apparent lacerations or fractures; neither observation establishes foul play."
+    },
+    {
+      "from_claim_id": "c10",
+      "to_claim_id": "c1",
+      "type": "explains",
+      "paragraph_ids": ["p1", "p17", "p18"],
+      "rationale": "Missing throat structures prevented the pathologist from excluding a neck injury, leaving the cause unresolved rather than proving such an injury."
+    },
+    {
+      "from_claim_id": "c12",
+      "to_claim_id": "c11",
+      "type": "qualifies",
+      "paragraph_ids": ["p26", "p27"],
+      "rationale": "The island observers provide a competing account under which drowning remains plausible despite the family's objections."
+    },
+    {
+      "from_claim_id": "c14",
+      "to_claim_id": "c13",
+      "type": "contradicts",
+      "paragraph_ids": ["p28", "p29", "p30"],
+      "rationale": "Trascher directly disputes both the clothing claim and Crump's characterization of what the Cajun Navy communicated."
+    }
+  ],
+  "article_metrics": {
+    "evidence_coverage": {
+      "status": "partial",
+      "rationale": "The main undetermined finding is accompanied by specific examination limitations, chronology, and competing accounts, but the underlying reports and toxicology evidence are unavailable and most independent-autopsy details are relayed through the family's lawyer.",
+      "paragraph_ids": ["p1", "p2", "p3", "p5", "p6", "p8", "p10", "p11", "p12", "p17", "p18", "p26", "p27", "p28", "p29"]
+    },
+    "source_traceability": {
+      "status": "partial",
+      "rationale": "The article identifies the lawyer, pathologist, coroner, parents, and Cajun Navy representative, but it does not provide the independent report itself and describes the Horn Island observers only collectively.",
+      "paragraph_ids": ["p2", "p5", "p8", "p9", "p17", "p18", "p21", "p27", "p29", "p30"]
+    },
+    "causal_support": {
+      "status": "not_applicable",
+      "rationale": "The article does not endorse a causal account of Wells' death; it presents unresolved possibilities and explicitly reports that cause and manner remain undetermined. The narrower explanations for examination limits are attributed to the report or lawyer.",
+      "paragraph_ids": ["p1", "p7", "p10", "p11", "p12", "p17", "p18", "p26", "p27"]
+    },
+    "context_completeness": {
+      "status": "partial",
+      "rationale": "The article supplies a timeline, distinguishes two autopsies, describes missing evidence, and presents competing perspectives, but the state report, toxicology, complete independent report, investigative findings, and precise condition and custody history of the body are absent.",
+      "paragraph_ids": ["p6", "p7", "p8", "p9", "p11", "p12", "p13", "p14", "p15", "p16", "p17"]
+    },
+    "framing_uncertainty_separation": {
+      "status": "present",
+      "rationale": "The article consistently attributes claims, distinguishes undetermined findings from possibilities that cannot be ruled out, notes examination limitations, and includes direct counteraccounts on drowning and clothing.",
+      "paragraph_ids": ["p1", "p2", "p4", "p10", "p12", "p18", "p26", "p27", "p28", "p29", "p30"]
+    }
+  },
+  "issues": [
+    {
+      "type": "missing_method_detail",
+      "severity": "high",
+      "description": "The second autopsy lacked toxicology and direct access to some organs and throat structures, and decomposition limited assessment; the full report and exact procedures are not supplied, materially constraining interpretation.",
+      "paragraph_ids": ["p3", "p6", "p11", "p12", "p17", "p18"]
+    },
+    {
+      "type": "other",
+      "severity": "medium",
+      "description": "Most findings from the independent autopsy are conveyed through the family's lawyer rather than quoted from a published report or explained directly by the pathologist, limiting the reader's ability to separate report language from legal characterization.",
+      "paragraph_ids": ["p2", "p3", "p4", "p5", "p6", "p7", "p11", "p12", "p18"]
+    },
+    {
+      "type": "selection_ambiguity",
+      "severity": "low",
+      "description": "The people said to know Horn Island well are not identified in this extract by number, expertise, or selection method, so their assessment establishes a competing possibility rather than its likelihood.",
+      "paragraph_ids": ["p27"]
+    }
+  ],
+  "bounded_conclusion": "Assuming the reported facts are accurate, the independent autopsy did not establish how Nolan Wells died and identified limitations that prevented several injuries or scenarios from being excluded, while the article's competing accounts likewise do not establish either drowning or foul play.",
+  "structural_assessment": {
+    "evidence_structure": "mostly_supported",
+    "presentation_style": "restrained",
+    "one_sentence": "The article supports its central claim of an undetermined result with attributed findings, limitations, chronology, and counteraccounts, while carefully stopping short of resolving the cause of death."
+  }
+}

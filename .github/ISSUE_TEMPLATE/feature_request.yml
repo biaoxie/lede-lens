@@ -1,0 +1,29 @@
+name: Feature request
+description: Propose a focused improvement to LedeLens.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: What user need would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+    validations:
+      required: true
+  - type: dropdown
+    id: contract
+    attributes:
+      label: Analysis contract impact
+      options:
+        - No schema or prompt change
+        - Non-breaking prompt change
+        - Schema change
+        - Unsure
+    validations:
+      required: true

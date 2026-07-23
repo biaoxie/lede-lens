@@ -1,0 +1,4 @@
+interface:
+  display_name: "News Structure Analyst"
+  short_description: "Audit article claims, evidence, causality, and framing"
+  default_prompt: "Use $analyze-news-structure to audit this article’s internal claim and evidence structure."

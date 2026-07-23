@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LedeLens</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">News structure audit</p>
+        <h1>LedeLens</h1>
+      </div>
+      <button id="settings-toggle" class="icon-button" type="button" aria-label="Open settings" title="Settings">⚙</button>
+    </header>
+
+    <main>
+      <section id="settings" class="panel" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Configuration</p>
+            <h2>OpenAI</h2>
+          </div>
+          <span id="key-status" class="status-pill">Not configured</span>
+        </div>
+
+        <form id="settings-form">
+          <label for="model">Model</label>
+          <select id="model" name="model">
+            <option value="gpt-5.6-sol">GPT-5.6 Sol — highest capability</option>
+            <option value="gpt-5.6-terra">GPT-5.6 Terra — balanced</option>
+            <option value="gpt-5.6-luna">GPT-5.6 Luna — fastest</option>
+          </select>
+
+          <label for="api-key">API key</label>
+          <input id="api-key" name="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…" />
+          <p class="help">The key is stored only in Chrome's session storage and is cleared when the browser closes.</p>
+
+          <div class="button-row">
+            <button class="primary small" type="submit">Save settings</button>
+            <button id="clear-key" class="quiet small" type="button">Clear key</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="workspace" class="panel">
+        <div class="mode-switch" role="group" aria-label="Analysis source">
+          <button class="mode active" data-mode="article" type="button">Full article</button>
+          <button class="mode" data-mode="selection" type="button">Selected text</button>
+        </div>
+
+        <div id="article-preview" class="article-preview" hidden>
+          <p class="eyebrow">Detected source</p>
+          <h2 id="article-title"></h2>
+          <p id="article-meta" class="muted"></p>
+        </div>
+
+        <div id="empty-state" class="empty-state">
+          <div class="lens-mark" aria-hidden="true"></div>
+          <h2>Inspect this article's reasoning</h2>
+          <p>Map its claims and evidence, examine causal leaps, and separate reporting from framing—without fact-checking.</p>
+        </div>
+
+        <button id="analyze" class="primary full" type="button">Analyze article</button>
+        <p id="message" class="message" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="results" hidden></section>
+    </main>
+
+    <footer>
+      <span>Structure, not truth.</span>
+      <span>Schema 0.1.0</span>
+    </footer>
+
+    <script type="module" src="panel.js"></script>
+  </body>
+</html>

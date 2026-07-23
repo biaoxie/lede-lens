@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NewsStructureAnalysis",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "metric_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": { "type": "string", "enum": ["present", "partial", "missing", "not_applicable"] },
+        "rationale": { "type": "string", "minLength": 1 },
+        "paragraph_ids": { "type": "array", "items": { "type": "string", "pattern": "^p[1-9][0-9]*$" } }
+      },
+      "required": ["status", "rationale", "paragraph_ids"]
+    }
+  },
+  "properties": {
+    "schema_version": { "type": "string", "const": "0.1.0" },
+    "language": { "type": "string", "minLength": 2 },
+    "extraction_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": { "type": "string", "enum": ["complete", "partial", "insufficient"] },
+        "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      },
+      "required": ["status", "limitations"]
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^c[1-9][0-9]*$" },
+          "text": { "type": "string", "minLength": 1 },
+          "type": { "type": "string", "enum": ["descriptive", "attributed", "causal", "predictive", "evaluative", "normative"] },
+          "speaker": { "type": ["string", "null"] },
+          "paragraph_ids": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^p[1-9][0-9]*$" } }
+        },
+        "required": ["id", "text", "type", "speaker", "paragraph_ids"]
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "from_claim_id": { "type": "string", "pattern": "^c[1-9][0-9]*$" },
+          "to_claim_id": { "type": "string", "pattern": "^c[1-9][0-9]*$" },
+          "type": { "type": "string", "enum": ["supports", "qualifies", "contradicts", "explains", "predicts"] },
+          "paragraph_ids": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^p[1-9][0-9]*$" } },
+          "rationale": { "type": "string", "minLength": 1 }
+        },
+        "required": ["from_claim_id", "to_claim_id", "type", "paragraph_ids", "rationale"]
+      }
+    },
+    "article_metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "evidence_coverage": { "$ref": "#/$defs/metric_result" },
+        "source_traceability": { "$ref": "#/$defs/metric_result" },
+        "causal_support": { "$ref": "#/$defs/metric_result" },
+        "context_completeness": { "$ref": "#/$defs/metric_result" },
+        "framing_uncertainty_separation": { "$ref": "#/$defs/metric_result" }
+      },
+      "required": ["evidence_coverage", "source_traceability", "causal_support", "context_completeness", "framing_uncertainty_separation"]
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": { "type": "string", "enum": ["unsupported_causation", "correlation_as_causation", "missing_baseline_or_denominator", "selection_ambiguity", "scope_shift", "one_sided_sourcing", "unsupported_prediction", "fact_commentary_blend", "certainty_inflation", "missing_method_detail", "other"] },
+          "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+          "description": { "type": "string", "minLength": 1 },
+          "paragraph_ids": { "type": "array", "items": { "type": "string", "pattern": "^p[1-9][0-9]*$" } }
+        },
+        "required": ["type", "severity", "description", "paragraph_ids"]
+      }
+    },
+    "bounded_conclusion": { "type": "string", "minLength": 1 },
+    "structural_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "evidence_structure": { "type": "string", "enum": ["structurally_solid", "mostly_supported", "evidence_limited", "severely_under_supported"] },
+        "presentation_style": { "type": "string", "enum": ["restrained", "interpretive", "framing_heavy", "manipulation_risk_signals"] },
+        "one_sentence": { "type": "string", "minLength": 1 }
+      },
+      "required": ["evidence_structure", "presentation_style", "one_sentence"]
+    }
+  },
+  "required": ["schema_version", "language", "extraction_assessment", "claims", "relationships", "article_metrics", "issues", "bounded_conclusion", "structural_assessment"]
+}
