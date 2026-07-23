@@ -69,6 +69,9 @@ function validateNode(value, schema, rootSchema, path, errors) {
     if (schema.minItems !== undefined && value.length < schema.minItems) {
       errors.push(`${describePath(path)} must contain at least ${schema.minItems} item(s).`);
     }
+    if (schema.maxItems !== undefined && value.length > schema.maxItems) {
+      errors.push(`${describePath(path)} must contain no more than ${schema.maxItems} item(s).`);
+    }
     value.forEach((item, index) => {
       if (schema.items) {
         validateNode(item, schema.items, rootSchema, `${path}[${index}]`, errors);

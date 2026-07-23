@@ -32,6 +32,26 @@ const elements = {
 };
 
 const progressOrder = ["extract", "analyze", "validate", "render"];
+const metricLabels = {
+  evidence_coverage: "What supports the main point?",
+  source_traceability: "Who says this?",
+  causal_support: "Does the article show why?",
+  context_completeness: "What important context is missing?",
+  framing_uncertainty_separation: "Are facts, interpretation, and uncertainty kept separate?",
+};
+const issueLabels = {
+  unsupported_causation: "Cause not demonstrated",
+  correlation_as_causation: "Correlation treated as cause",
+  missing_baseline_or_denominator: "Missing baseline or denominator",
+  selection_ambiguity: "Unclear selection",
+  scope_shift: "The scope changes",
+  one_sided_sourcing: "One-sided sourcing",
+  unsupported_prediction: "Prediction lacks support",
+  fact_commentary_blend: "Facts and commentary are blended",
+  certainty_inflation: "Certainty is overstated",
+  missing_method_detail: "Missing method details",
+  other: "Other structural issue",
+};
 let progressInterval;
 let narrativeTimers = [];
 let progressStartedAt = 0;
@@ -331,22 +351,26 @@ function renderAssessment(result) {
     ratingHelp("Presentation style", PRESENTATION_RATINGS, presentation.value),
   );
 
+  const styleNote = document.createElement("p");
+  styleNote.className = "presentation-note";
+  styleNote.textContent = "Presentation style describes how the article is written, not whether it is true.";
+
   const summary = document.createElement("p");
   summary.className = "assessment-summary";
   summary.textContent = result.structural_assessment.one_sentence;
-  container.append(eyebrow, verdictRow, plainMeaning, styleRow, summary);
+  container.append(eyebrow, verdictRow, plainMeaning, styleRow, styleNote, summary);
   return container;
 }
 
 function renderMetrics(metrics) {
-  const container = section("Five structural metrics");
+  const container = section("Five questions to ask");
   for (const [name, metric] of Object.entries(metrics)) {
     const item = document.createElement("article");
     item.className = "metric";
     const titleRow = document.createElement("div");
     titleRow.className = "metric-title";
     const heading = document.createElement("h3");
-    heading.textContent = name.replaceAll("_", " ");
+    heading.textContent = metricLabels[name] || name.replaceAll("_", " ");
     titleRow.append(heading, tag(metric.status, metric.status));
     const rationale = document.createElement("p");
     rationale.textContent = metric.rationale;
@@ -357,7 +381,7 @@ function renderMetrics(metrics) {
 }
 
 function renderIssues(issues) {
-  const container = section(`Material issues (${issues.length})`);
+  const container = section(`What to watch (${issues.length})`);
   if (!issues.length) {
     const empty = document.createElement("p");
     empty.className = "muted";
@@ -368,7 +392,7 @@ function renderIssues(issues) {
     const item = document.createElement("article");
     item.className = "issue";
     const heading = document.createElement("h3");
-    heading.textContent = issue.type.replaceAll("_", " ");
+    heading.textContent = issueLabels[issue.type] || issue.type.replaceAll("_", " ");
     heading.append(" ", tag(issue.severity, issue.severity));
     const description = document.createElement("p");
     description.textContent = issue.description;
@@ -379,7 +403,7 @@ function renderIssues(issues) {
 }
 
 function renderConclusion(result) {
-  const container = section("Bounded conclusion");
+  const container = section("What the article can support");
   const conclusion = document.createElement("p");
   conclusion.className = "bounded-conclusion";
   conclusion.textContent = result.bounded_conclusion;

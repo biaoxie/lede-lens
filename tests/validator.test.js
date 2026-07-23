@@ -84,6 +84,7 @@ test("validates constants, string constraints, arrays, and required fields", () 
       codes: {
         type: "array",
         minItems: 2,
+        maxItems: 3,
         items: { type: "string", pattern: "^p[0-9]+$" },
       },
     },
@@ -94,6 +95,13 @@ test("validates constants, string constraints, arrays, and required fields", () 
   assert.match(errors, /shorter/);
   assert.match(errors, /does not match/);
   assert.match(errors, /at least 2/);
+
+  const tooMany = validateJsonSchema({
+    version: "1",
+    name: "Abc",
+    codes: ["p1", "p2", "p3", "p4"],
+  }, constrainedSchema);
+  assert.match(tooMany.errors.join("\n"), /no more than 3/);
 });
 
 test("reports unsupported and unresolved schema references", () => {

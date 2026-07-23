@@ -244,6 +244,7 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid rgba(184, 7
 }
 .presentation-row > span:first-child { color: var(--muted); }
 .presentation-value { margin-left: auto; }
+.presentation-note { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
 .tone-strong { --tone-color: #246445; color: var(--tone-color); }
 .tone-positive { --tone-color: #54773d; color: var(--tone-color); }
 .tone-caution { --tone-color: #9b6515; color: var(--tone-color); }

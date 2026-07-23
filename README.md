@@ -8,8 +8,8 @@ It does **not** fact-check the article. Its core question is narrower:
 
 ## What it shows
 
-- Five structural metrics: evidence coverage, source traceability, causal support, context completeness, and framing/uncertainty separation
-- Material issues such as unsupported causation, missing baselines, scope shifts, one-sided sourcing, or certainty inflation
+- Five reader-focused questions about support, sourcing, causality, missing context, and the separation of facts from interpretation
+- Up to three material issues such as unsupported causation, missing baselines, one-sided sourcing, or certainty inflation
 - The strongest conclusion the article can support on its own terms
 - A bounded evidence-structure verdict and presentation-style label
 - Paragraph links that scroll back to the corresponding source text
