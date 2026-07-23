@@ -1,5 +1,9 @@
 import { fetchAnalysisModels, isAnalysisModel } from "./lib/models.js";
-import { findCachedAnalysis, upsertCachedAnalysis } from "./lib/cache.js";
+import {
+  findCachedAnalysis,
+  removeCachedAnalysis,
+  upsertCachedAnalysis,
+} from "./lib/cache.js";
 
 const ANALYSIS_CACHE_KEY = "analysisCache";
 
@@ -72,9 +76,25 @@ async function saveCachedAnalysis({ url, fingerprint, result } = {}) {
   const { [ANALYSIS_CACHE_KEY]: entries = [] } = await chrome.storage.local.get({
     [ANALYSIS_CACHE_KEY]: [],
   });
-  const nextEntries = upsertCachedAnalysis(entries, { url, fingerprint, result });
+  const savedAt = Date.now();
+  const nextEntries = upsertCachedAnalysis(entries, {
+    url,
+    fingerprint,
+    result,
+    savedAt,
+  });
   await chrome.storage.local.set({ [ANALYSIS_CACHE_KEY]: nextEntries });
-  return { saved: true };
+  return { saved: true, savedAt };
+}
+
+async function removeCachedAnalysisEntry({ url, fingerprint, savedAt } = {}) {
+  const { [ANALYSIS_CACHE_KEY]: entries = [] } = await chrome.storage.local.get({
+    [ANALYSIS_CACHE_KEY]: [],
+  });
+  await chrome.storage.local.set({
+    [ANALYSIS_CACHE_KEY]: removeCachedAnalysis(entries, url, fingerprint, savedAt),
+  });
+  return { removed: true };
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -92,6 +112,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         return getCachedAnalysis(message.payload || {});
       case "SAVE_CACHED_ANALYSIS":
         return saveCachedAnalysis(message.payload || {});
+      case "REMOVE_CACHED_ANALYSIS":
+        return removeCachedAnalysisEntry(message.payload || {});
       case "CLEAR_ANALYSIS_CACHE":
         await chrome.storage.local.remove(ANALYSIS_CACHE_KEY);
         return { cleared: true };

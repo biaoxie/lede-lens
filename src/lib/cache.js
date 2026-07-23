@@ -64,3 +64,13 @@ export function upsertCachedAnalysis(entries, {
     .sort((left, right) => right.savedAt - left.savedAt)
     .slice(0, limit);
 }
+
+export function removeCachedAnalysis(entries, url, fingerprint, savedAt = null) {
+  const normalizedUrl = normalizeArticleUrl(url);
+  if (!normalizedUrl || !fingerprint) return [...(entries || [])];
+  return (entries || []).filter((entry) => (
+    entry?.url !== normalizedUrl
+    || entry.fingerprint !== fingerprint
+    || (savedAt !== null && entry.savedAt !== savedAt)
+  ));
+}

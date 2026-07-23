@@ -5,6 +5,18 @@ const OPENAI_ENDPOINT = "https://api.openai.com/v1/responses";
 
 let assetsPromise;
 
+function cancelledRequest(signal, requestId, cause) {
+  const error = new Error("The analysis request was cancelled.", { cause });
+  error.name = "AnalysisCancelledError";
+  error.category = "cancelled";
+  error.details = { reason: signal?.reason || "user_cancelled", requestId };
+  return error;
+}
+
+function wasAborted(error, signal) {
+  return Boolean(signal?.aborted || error?.name === "AbortError");
+}
+
 async function loadAssets() {
   if (!assetsPromise) {
     assetsPromise = Promise.all([
@@ -117,7 +129,7 @@ async function readResponseStream(response, onProgress, requestStartedAt) {
   };
 }
 
-export async function analyzeArticle(article, onProgress = () => {}) {
+export async function analyzeArticle(article, onProgress = () => {}, { signal } = {}) {
   if (!article?.paragraphs?.length) {
     throw new Error("No article paragraphs were extracted from this page.");
   }
@@ -165,8 +177,12 @@ export async function analyzeArticle(article, onProgress = () => {}) {
         store: false,
         stream: true,
       }),
+      signal,
     });
   } catch (error) {
+    if (wasAborted(error, signal)) {
+      throw cancelledRequest(signal, clientRequestId, error);
+    }
     throw new Error(withRequestReference(
       "The network connection ended before LedeLens received OpenAI's response.",
       clientRequestId,
@@ -191,6 +207,9 @@ export async function analyzeArticle(article, onProgress = () => {}) {
   try {
     streamed = await readResponseStream(response, onProgress, requestStartedAt);
   } catch (error) {
+    if (wasAborted(error, signal)) {
+      throw cancelledRequest(signal, requestId, error);
+    }
     throw new Error(withRequestReference(error.message, requestId), { cause: error });
   }
 

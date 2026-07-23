@@ -6,6 +6,11 @@ import {
   findRating,
 } from "../lib/ratings.js";
 import { fingerprintArticle } from "../lib/cache.js";
+import {
+  createAnalysisOperation,
+  isCurrentAnalysisOperation,
+  stopAnalysisOperation,
+} from "../lib/request-lifecycle.js";
 
 const state = {
   mode: "article",
@@ -13,6 +18,7 @@ const state = {
   articleFingerprint: null,
   settings: null,
   pageRevision: 0,
+  activeAnalysis: null,
 };
 
 const elements = {
@@ -23,6 +29,7 @@ const elements = {
   articleTitle: document.querySelector("#article-title"),
   clearCache: document.querySelector("#clear-cache"),
   clearKey: document.querySelector("#clear-key"),
+  cancelAnalysis: document.querySelector("#cancel-analysis"),
   emptyDescription: document.querySelector("#empty-description"),
   emptyState: document.querySelector("#empty-state"),
   emptyTitle: document.querySelector("#empty-title"),
@@ -69,6 +76,18 @@ let progressStartedAt = 0;
 let activeProgressStep = null;
 let refreshTimer;
 
+function stopActiveAnalysis(reason = "page_changed", { invalidate = true } = {}) {
+  const operation = state.activeAnalysis;
+  if (!operation) return false;
+  stopAnalysisOperation(operation, reason);
+  if (invalidate && state.activeAnalysis === operation) state.activeAnalysis = null;
+  return true;
+}
+
+function isCurrentAnalysis(operation) {
+  return isCurrentAnalysisOperation(state.activeAnalysis, operation, state.pageRevision);
+}
+
 function sendMessage(message) {
   return chrome.runtime.sendMessage(message).then((response) => {
     if (!response?.ok) throw new Error(response?.error || "The extension did not respond.");
@@ -91,6 +110,7 @@ function setEmptyState(title, description) {
 }
 
 function resetPageUi({ needsAccess = false } = {}) {
+  stopActiveAnalysis("page_changed");
   state.pageRevision += 1;
   state.article = null;
   state.articleFingerprint = null;
@@ -157,7 +177,7 @@ function startProgress() {
   clearProgressTimers();
   progressStartedAt = Date.now();
   elements.progress.hidden = false;
-  elements.progress.classList.remove("failed");
+  elements.progress.classList.remove("failed", "cancelled");
   elements.progressElapsed.textContent = "0:00";
   setProgress("extract", "Reading the article", "Finding the main article and preserving source links.");
   progressInterval = setInterval(() => {
@@ -193,9 +213,21 @@ function completeProgress() {
 
 function failProgress() {
   clearProgressTimers();
+  elements.progress.classList.remove("cancelled");
   elements.progress.classList.add("failed");
   elements.progressTitle.textContent = "Analysis stopped";
   elements.progressDetail.textContent = "See the error below. Your article page was not changed.";
+  elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
+}
+
+function cancelProgress(reason = "user_cancelled") {
+  clearProgressTimers();
+  elements.progress.classList.remove("failed");
+  elements.progress.classList.add("cancelled");
+  elements.progressTitle.textContent = "Analysis stopped";
+  elements.progressDetail.textContent = reason === "page_changed"
+    ? "Analysis stopped because you changed pages."
+    : "You cancelled the analysis. No report was saved.";
   elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
 }
 
@@ -343,8 +375,11 @@ async function refreshCurrentPage() {
 
 function schedulePageRefresh({ accessGranted = false } = {}) {
   clearTimeout(refreshTimer);
+  const stopped = stopActiveAnalysis("page_changed");
   resetPageUi({ needsAccess: !accessGranted });
-  setMessage(accessGranted ? "Reading this page…" : "");
+  setMessage(stopped
+    ? "Analysis stopped because you changed pages."
+    : (accessGranted ? "Reading this page…" : ""));
   if (accessGranted) {
     refreshTimer = setTimeout(refreshCurrentPage, 50);
   }
@@ -528,7 +563,10 @@ function renderResults(result) {
 }
 
 async function analyze() {
+  stopActiveAnalysis("superseded");
   const analysisRevision = state.pageRevision;
+  const operation = createAnalysisOperation(analysisRevision);
+  state.activeAnalysis = operation;
   elements.analyze.disabled = true;
   elements.results.hidden = true;
   setMessage("");
@@ -536,6 +574,7 @@ async function analyze() {
   try {
     const article = await extract(analysisRevision);
     if (!article) return;
+    if (!isCurrentAnalysis(operation)) return;
     setProgress(
       "analyze",
       "Analyzing article structure",
@@ -543,7 +582,7 @@ async function analyze() {
     );
     narrateModelWait(article.paragraphs.length);
     const { result, diagnostics } = await analyzeArticle(article, ({ type, eventType, elapsedMs }) => {
-      if (analysisRevision !== state.pageRevision) return;
+      if (!isCurrentAnalysis(operation)) return;
       if (type === "response_started") {
         setProgress("analyze", "OpenAI accepted the request", "The live response stream is connected. The model is reasoning and preparing the report.");
       } else if (type === "first_output") {
@@ -553,41 +592,67 @@ async function analyze() {
       } else if (type === "validating") {
         setProgress("validate", "Validating every reference", "Checking the schema, metrics, issues, and paragraph references.");
       }
-    });
+    }, { signal: operation.controller.signal });
+    if (!isCurrentAnalysis(operation)) return;
     let cacheWarning = "";
+    const cacheIdentity = {
+      url: article.url,
+      fingerprint: fingerprintArticle(article),
+    };
     try {
-      await sendMessage({
+      const saved = await sendMessage({
         type: "SAVE_CACHED_ANALYSIS",
         payload: {
-          url: article.url,
-          fingerprint: fingerprintArticle(article),
+          ...cacheIdentity,
           result,
         },
       });
+      if (!isCurrentAnalysis(operation)) {
+        await sendMessage({
+          type: "REMOVE_CACHED_ANALYSIS",
+          payload: { ...cacheIdentity, savedAt: saved.savedAt },
+        }).catch(() => {});
+        return;
+      }
     } catch {
       cacheWarning = "Analysis ready, but Chrome could not save it for this page.";
     }
-    if (analysisRevision !== state.pageRevision) return;
+    if (!isCurrentAnalysis(operation)) return;
     setProgress("render", "Building the report", "Organizing the assessment, metrics, issues, and source links.");
     renderResults(result);
     elements.analyze.textContent = state.mode === "article" ? "Re-analyze article" : "Re-analyze selected text";
     completeProgress();
     setMessage(cacheWarning || formatDiagnostics(diagnostics));
   } catch (error) {
-    if (analysisRevision !== state.pageRevision) return;
-    failProgress();
-    setMessage(error.message, true);
+    if (state.activeAnalysis !== operation || analysisRevision !== state.pageRevision) return;
+    if (error?.category === "cancelled") {
+      cancelProgress(error.details?.reason);
+      setMessage(
+        error.details?.reason === "page_changed"
+          ? "Analysis stopped because you changed pages."
+          : "Analysis cancelled. No report was saved.",
+      );
+    } else {
+      failProgress();
+      setMessage(error.message, true);
+    }
     if (!state.settings?.hasApiKey) elements.settings.hidden = false;
   } finally {
-    if (analysisRevision === state.pageRevision) elements.analyze.disabled = false;
+    if (state.activeAnalysis === operation) {
+      state.activeAnalysis = null;
+      elements.analyze.disabled = false;
+    }
   }
 }
 
 document.querySelectorAll(".mode").forEach((button) => {
   button.addEventListener("click", () => {
+    const stopped = stopActiveAnalysis("mode_changed");
     state.mode = button.dataset.mode;
     document.querySelectorAll(".mode").forEach((candidate) => candidate.classList.toggle("active", candidate === button));
-    refreshCurrentPage();
+    refreshCurrentPage().then(() => {
+      if (stopped) setMessage("Analysis stopped because you changed the analysis source.");
+    });
   });
 });
 
@@ -641,6 +706,13 @@ elements.apiKey.addEventListener("input", () => {
   elements.modelStatus.textContent = "Load models again to verify this API key.";
 });
 elements.analyze.addEventListener("click", analyze);
+elements.cancelAnalysis.addEventListener("click", () => {
+  const operation = state.activeAnalysis;
+  if (!operation || operation.controller.signal.aborted) return;
+  cancelProgress("user_cancelled");
+  setMessage("Analysis cancelled. No report was saved.");
+  stopAnalysisOperation(operation, "user_cancelled");
+});
 
 chrome.runtime.onMessage.addListener((message) => {
   if (message?.type === "PAGE_ACCESS_GRANTED") {
