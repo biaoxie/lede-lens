@@ -37,6 +37,13 @@ test("cancellation during extraction cannot advance to analysis progress", () =>
   );
 });
 
+test("cancellation while refreshing saved-report status removes the unrendered report", () => {
+  assert.match(
+    panelSource,
+    /GET_DATA_STATUS[\s\S]*?if \(!isCurrentAnalysis\(operation\)\) \{[\s\S]*?REMOVE_CACHED_ANALYSIS[\s\S]*?savedAt/,
+  );
+});
+
 test("startup restores settings and local data without requesting OpenAI models", () => {
   const initializeBody = panelSource.match(/async function initialize\(\) \{([\s\S]*?)\n\}\n\ninitialize\(\);/)?.[1];
   assert.ok(initializeBody, "initialize function should be present");

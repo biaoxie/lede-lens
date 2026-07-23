@@ -233,15 +233,22 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid rgba(184, 7
 .danger:hover { border-color: var(--red); background: #fbebe7; }
 
 .technical-details {
-  margin-top: 16px;
+  margin-top: 10px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
   color: var(--muted);
-  font-size: 13px;
+  font-size: 11px;
 }
-.technical-details summary { min-height: 32px; color: var(--ink); cursor: pointer; font-weight: 750; }
+.technical-details summary {
+  min-height: 32px;
+  padding-top: 9px;
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 750;
+}
 .technical-details p { margin: 4px 0; }
 .technical-details a { color: var(--accent-dark); }
+.settings-panel .technical-details { margin-top: 16px; font-size: 13px; }
 
 .data-disclosure {
   margin: 14px 0 9px;
@@ -340,18 +347,6 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid rgba(184, 7
 .error-state h2 { margin-bottom: 6px; }
 .error-state > p:not(.eyebrow) { margin-bottom: 12px; font-size: 12px; line-height: 1.5; }
 
-.technical-details {
-  margin-top: 10px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 11px;
-}
-.technical-details summary {
-  padding: 9px 0 0;
-  color: var(--ink);
-  cursor: pointer;
-  font-weight: 750;
-}
 .technical-details dl {
   display: grid;
   grid-template-columns: minmax(88px, auto) minmax(0, 1fr);

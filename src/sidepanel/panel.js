@@ -862,6 +862,13 @@ async function analyze() {
       }
       savedAt = saved.savedAt;
       const { savedReportCount } = await sendMessage({ type: "GET_DATA_STATUS" });
+      if (!isCurrentAnalysis(operation)) {
+        await sendMessage({
+          type: "REMOVE_CACHED_ANALYSIS",
+          payload: { ...cacheIdentity, savedAt },
+        }).catch(() => {});
+        return;
+      }
       updateDataStatus(savedReportCount);
     } catch {
       cacheWarning = "Analysis ready, but Chrome could not save it for this page.";
@@ -1013,7 +1020,7 @@ elements.clearCache.addEventListener("click", async () => {
   } catch (error) {
     setMessage(error.message, true);
   } finally {
-    elements.clearCache.disabled = false;
+    elements.clearCache.disabled = state.savedReportCount === 0;
   }
 });
 
