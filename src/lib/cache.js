@@ -4,6 +4,7 @@ export const MAX_CACHED_ANALYSES = 30;
 export function normalizeArticleUrl(value) {
   try {
     const url = new URL(value);
+    url.search = "";
     url.hash = "";
     return url.toString();
   } catch {

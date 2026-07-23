@@ -137,6 +137,7 @@ export async function analyzeArticle(article, onProgress = () => {}) {
 
   const clientRequestId = crypto.randomUUID();
   const requestStartedAt = Date.now();
+  const { url: _localPageUrl, ...providerArticle } = article;
   onProgress({ type: "request_sent", clientRequestId, model });
 
   let response;
@@ -151,7 +152,7 @@ export async function analyzeArticle(article, onProgress = () => {}) {
       body: JSON.stringify({
         model,
         instructions: systemPrompt,
-        input: JSON.stringify(article),
+        input: JSON.stringify(providerArticle),
         text: {
           verbosity: "low",
           format: {

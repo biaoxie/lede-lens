@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="560" viewBox="0 0 1400 560">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffaf2"/>
+      <stop offset=".58" stop-color="#f5eadb"/>
+      <stop offset="1" stop-color="#ead7bd"/>
+    </linearGradient>
+    <filter id="card-shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="22" stdDeviation="24" flood-color="#49301f" flood-opacity=".15"/>
+    </filter>
+  </defs>
+  <rect width="1400" height="560" fill="url(#background)"/>
+  <circle cx="1320" cy="40" r="250" fill="#e76735" opacity=".09"/>
+  <circle cx="90" cy="570" r="240" fill="#c98b36" opacity=".10"/>
+  <g transform="translate(110 120)">
+    <rect width="112" height="112" rx="28" fill="#b84a2b"/>
+    <path d="M27 46V27h19M68 27h19v19M87 68v19H68M46 87H27V68" fill="none" stroke="#fffdf8" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="34" y="41" width="46" height="9" rx="4.5" fill="#fffdf8"/>
+    <rect x="43" y="66" width="37" height="9" rx="4.5" fill="#fffdf8"/>
+    <rect x="52" y="52" width="12" height="12" rx="3" transform="rotate(45 58 58)" fill="#fffdf8"/>
+    <text x="0" y="178" fill="#27231f" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="800" letter-spacing="-1.5">LedeLens</text>
+    <text x="0" y="224" fill="#655b52" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="600">See how the story is built.</text>
+    <text x="0" y="275" fill="#7d7167" font-family="Arial, Helvetica, sans-serif" font-size="18">Evidence · Sources · Cause and effect · Context · Framing</text>
+  </g>
+  <g transform="translate(775 64)" filter="url(#card-shadow)">
+    <rect width="500" height="430" rx="28" fill="#fff" stroke="#e1d3c3"/>
+    <text x="40" y="55" fill="#8f7b68" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="800" letter-spacing="2">OVERALL FINDING</text>
+    <rect x="38" y="77" width="207" height="48" rx="24" fill="#e4f4e8"/>
+    <circle cx="66" cy="101" r="8" fill="#4c9a64"/>
+    <text x="84" y="109" fill="#2d6c41" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="800">Well supported</text>
+    <text x="40" y="169" fill="#27231f" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="800">What the article can support</text>
+    <rect x="40" y="190" width="412" height="11" rx="5.5" fill="#d8d0c8"/>
+    <rect x="40" y="216" width="368" height="11" rx="5.5" fill="#e5dfd9"/>
+    <rect x="40" y="242" width="389" height="11" rx="5.5" fill="#e5dfd9"/>
+    <text x="40" y="303" fill="#27231f" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="800">Five questions to ask</text>
+    <g transform="translate(40 328)">
+      <circle cx="9" cy="9" r="9" fill="#60a977"/>
+      <rect x="30" y="4" width="174" height="10" rx="5" fill="#5d554e"/>
+      <rect x="340" width="72" height="18" rx="9" fill="#e4f4e8"/>
+      <circle cx="9" cy="45" r="9" fill="#d6a445"/>
+      <rect x="30" y="40" width="212" height="10" rx="5" fill="#5d554e"/>
+      <rect x="340" y="36" width="72" height="18" rx="9" fill="#faedcf"/>
+    </g>
+  </g>
+</svg>

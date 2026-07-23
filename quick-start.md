@@ -49,6 +49,8 @@ LedeLens requests the available models directly from OpenAI and verifies your se
 
 Use an OpenAI API key—not your ChatGPT password. Never include the key in screenshots, issues, or support messages.
 
+Before an analysis, LedeLens explains that the extracted article text and metadata will be sent to OpenAI. The page address remains local, with query parameters and fragments removed, and is used only to restore saved reports. See the [Privacy Policy](PRIVACY.md).
+
 ## 4. Analyze a full article
 
 1. Choose **Full article**.
@@ -86,6 +88,8 @@ To restore it:
 Restoring a report does not make another OpenAI request. Select **Re-analyze article** when you want a fresh result.
 
 The cache is limited to 30 reports and is not synchronized through Chrome Sync. If the article content changes, LedeLens does not reuse the old report.
+
+To delete every cached report and page identifier, open settings and select **Clear saved analyses**.
 
 ## Switching pages while the side panel is open
 

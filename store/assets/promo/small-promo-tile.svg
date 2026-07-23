@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffaf1"/>
+      <stop offset="1" stop-color="#f2e3cc"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#4b2d1d" flood-opacity=".18"/>
+    </filter>
+  </defs>
+  <rect width="440" height="280" rx="0" fill="url(#bg)"/>
+  <circle cx="366" cy="48" r="88" fill="#e76735" opacity=".12"/>
+  <circle cx="53" cy="264" r="104" fill="#d9a54a" opacity=".12"/>
+  <g transform="translate(38 40)" filter="url(#shadow)">
+    <rect width="104" height="104" rx="26" fill="#b84a2b"/>
+    <path d="M25 43V25h18M63 25h18v18M81 63v18H63M43 81H25V63" fill="none" stroke="#fffdf8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="32" y="38" width="42" height="8" rx="4" fill="#fffdf8"/>
+    <rect x="40" y="61" width="34" height="8" rx="4" fill="#fffdf8"/>
+    <rect x="48" y="48" width="11" height="11" rx="2.5" transform="rotate(45 53.5 53.5)" fill="#fffdf8"/>
+  </g>
+  <text x="38" y="187" fill="#27231f" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" letter-spacing="-.5">LedeLens</text>
+  <text x="39" y="216" fill="#6e6258" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600">See how the story is built.</text>
+  <g transform="translate(282 168)">
+    <rect width="120" height="68" rx="16" fill="#fff" stroke="#e0cdb8"/>
+    <circle cx="24" cy="23" r="7" fill="#53a56f"/>
+    <rect x="39" y="17" width="56" height="11" rx="5.5" fill="#403a34"/>
+    <rect x="17" y="42" width="86" height="7" rx="3.5" fill="#dacfc4"/>
+  </g>
+</svg>

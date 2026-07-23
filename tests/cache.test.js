@@ -9,10 +9,10 @@ import {
   upsertCachedAnalysis,
 } from "../src/lib/cache.js";
 
-test("normalizes article URLs without fragments", () => {
+test("normalizes article URLs without queries or fragments", () => {
   assert.equal(
     normalizeArticleUrl("https://example.com/story?edition=1#comments"),
-    "https://example.com/story?edition=1",
+    "https://example.com/story",
   );
   assert.equal(normalizeArticleUrl("not a url"), null);
 });

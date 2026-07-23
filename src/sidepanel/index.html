@@ -50,6 +50,7 @@
           <div class="button-row">
             <button id="save-settings" class="primary small" type="submit" disabled>Confirm settings</button>
             <button id="clear-key" class="quiet small" type="button">Clear key</button>
+            <button id="clear-cache" class="quiet small" type="button">Clear saved analyses</button>
           </div>
         </form>
       </section>
@@ -67,11 +68,12 @@
         </div>
 
         <div id="empty-state" class="empty-state">
-          <div class="lens-mark" aria-hidden="true"></div>
+          <img class="product-mark" src="../../assets/icons/icon-48.png" alt="" aria-hidden="true" />
           <h2 id="empty-title">Inspect this article's reasoning</h2>
           <p id="empty-description">Examine its evidence, causal reasoning, context, and framing—without fact-checking.</p>
         </div>
 
+        <p class="data-disclosure">Analyzing sends the extracted article text and metadata to OpenAI. The page address stays local and is used only to restore saved reports. OpenAI API charges may apply.</p>
         <button id="analyze" class="primary full" type="button">Analyze article</button>
         <div id="progress" class="progress" role="status" aria-live="polite" hidden>
           <div class="progress-heading">

@@ -1,5 +1,10 @@
 import { analyzeArticle } from "../lib/openai.js";
-import { EVIDENCE_RATINGS, PRESENTATION_RATINGS, findRating } from "../lib/ratings.js";
+import {
+  EVIDENCE_RATINGS,
+  PRESENTATION_RATINGS,
+  findMetricStatusLabel,
+  findRating,
+} from "../lib/ratings.js";
 import { fingerprintArticle } from "../lib/cache.js";
 
 const state = {
@@ -16,6 +21,7 @@ const elements = {
   articleMeta: document.querySelector("#article-meta"),
   articlePreview: document.querySelector("#article-preview"),
   articleTitle: document.querySelector("#article-title"),
+  clearCache: document.querySelector("#clear-cache"),
   clearKey: document.querySelector("#clear-key"),
   emptyDescription: document.querySelector("#empty-description"),
   emptyState: document.querySelector("#empty-state"),
@@ -39,10 +45,10 @@ const elements = {
 const progressOrder = ["extract", "analyze", "validate", "render"];
 const metricLabels = {
   evidence_coverage: "What supports the main point?",
-  source_traceability: "Who says this?",
-  causal_support: "Does the article show why?",
-  context_completeness: "What important context is missing?",
-  framing_uncertainty_separation: "Are facts, interpretation, and uncertainty kept separate?",
+  source_traceability: "Can you tell who says what?",
+  causal_support: "Does the article support its cause-and-effect claims?",
+  context_completeness: "Is there enough important context?",
+  framing_uncertainty_separation: "Are reporting, interpretation, and uncertainty kept separate?",
 };
 const issueLabels = {
   unsupported_causation: "Cause not demonstrated",
@@ -93,14 +99,15 @@ function resetPageUi({ needsAccess = false } = {}) {
   elements.articlePreview.hidden = true;
   elements.results.hidden = true;
   elements.emptyState.hidden = false;
-  elements.analyze.textContent = defaultAnalyzeLabel();
   elements.analyze.disabled = needsAccess;
   if (needsAccess) {
+    elements.analyze.textContent = "Select toolbar icon first";
     setEmptyState(
-      "Refresh access for this page",
-      "Click the LedeLens toolbar icon once on this tab, then the side panel will refresh automatically.",
+      "Allow LedeLens to read this tab",
+      "Select the LedeLens icon in Chrome’s toolbar to connect this page. You don’t need to reload the page. If the icon isn’t visible, open Chrome’s Extensions menu and select LedeLens.",
     );
   } else {
+    elements.analyze.textContent = defaultAnalyzeLabel();
     setEmptyState(
       "Inspect this article's reasoning",
       "Examine its evidence, causal reasoning, context, and framing—without fact-checking.",
@@ -261,7 +268,7 @@ async function runContentFunction(functionName, ...args) {
   try {
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      files: ["node_modules/@mozilla/readability/Readability.js", "src/content.js"],
+      files: ["src/vendor/mozilla-readability/Readability.js", "src/content.js"],
     });
     const [execution] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
@@ -309,7 +316,7 @@ async function loadCachedAnalysis(article, expectedRevision) {
 
 function showAccessPrompt(message = "") {
   resetPageUi({ needsAccess: true });
-  setMessage(message || "Click the LedeLens toolbar icon on this tab to refresh page access.");
+  setMessage(message);
 }
 
 async function refreshCurrentPage() {
@@ -337,9 +344,7 @@ async function refreshCurrentPage() {
 function schedulePageRefresh({ accessGranted = false } = {}) {
   clearTimeout(refreshTimer);
   resetPageUi({ needsAccess: !accessGranted });
-  setMessage(accessGranted
-    ? "Refreshing this page…"
-    : "Click the LedeLens toolbar icon on this tab to refresh page access.");
+  setMessage(accessGranted ? "Reading this page…" : "");
   if (accessGranted) {
     refreshTimer = setTimeout(refreshCurrentPage, 50);
   }
@@ -422,7 +427,7 @@ function renderAssessment(result) {
 
   const eyebrow = document.createElement("p");
   eyebrow.className = "eyebrow";
-  eyebrow.textContent = "Overall finding";
+  eyebrow.textContent = "How well does this article support its main takeaway?";
 
   const verdictRow = document.createElement("div");
   verdictRow.className = "verdict-row";
@@ -434,6 +439,10 @@ function renderAssessment(result) {
   const plainMeaning = document.createElement("p");
   plainMeaning.className = "verdict-meaning";
   plainMeaning.textContent = evidence.summary;
+
+  const scopeNote = document.createElement("p");
+  scopeNote.className = "assessment-scope";
+  scopeNote.textContent = "This looks only at support presented in the article. It does not check whether the reported claims are true.";
 
   const styleRow = document.createElement("div");
   styleRow.className = "presentation-row";
@@ -455,7 +464,7 @@ function renderAssessment(result) {
   const summary = document.createElement("p");
   summary.className = "assessment-summary";
   summary.textContent = result.structural_assessment.one_sentence;
-  container.append(eyebrow, verdictRow, plainMeaning, styleRow, styleNote, summary);
+  container.append(eyebrow, verdictRow, plainMeaning, scopeNote, styleRow, styleNote, summary);
   return container;
 }
 
@@ -468,7 +477,7 @@ function renderMetrics(metrics) {
     titleRow.className = "metric-title";
     const heading = document.createElement("h3");
     heading.textContent = metricLabels[name] || name.replaceAll("_", " ");
-    titleRow.append(heading, tag(metric.status, metric.status));
+    titleRow.append(heading, tag(findMetricStatusLabel(name, metric.status), metric.status));
     const rationale = document.createElement("p");
     rationale.textContent = metric.rationale;
     item.append(titleRow, rationale, paragraphLinks(metric.paragraph_ids));
@@ -608,6 +617,18 @@ elements.clearKey.addEventListener("click", async () => {
   updateSettingsUi();
   elements.settings.hidden = false;
   setMessage("Session API key cleared.");
+});
+
+elements.clearCache.addEventListener("click", async () => {
+  elements.clearCache.disabled = true;
+  try {
+    await sendMessage({ type: "CLEAR_ANALYSIS_CACHE" });
+    setMessage("Saved analyses cleared from this Chrome profile.");
+  } catch (error) {
+    setMessage(error.message, true);
+  } finally {
+    elements.clearCache.disabled = false;
+  }
 });
 
 elements.loadModels.addEventListener("click", loadAvailableModels);

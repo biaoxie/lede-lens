@@ -1,14 +1,17 @@
 {
   "name": "ledelens",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "description": "A provider-neutral news structure auditor delivered as a Chrome extension.",
   "type": "module",
   "scripts": {
     "check": "node scripts/check.mjs",
+    "check:store-assets": "node scripts/check-store-assets.mjs",
+    "package": "node scripts/package-extension.mjs",
+    "release:check": "npm run verify && npm run package && node scripts/check-release.mjs",
     "test": "node --test",
     "test:coverage": "node --test --experimental-test-coverage \"--test-coverage-include=src/lib/*.js\" --test-coverage-lines=95 --test-coverage-branches=95 --test-coverage-functions=95",
-    "verify": "npm run check && npm run test:coverage"
+    "verify": "npm run check && npm run check:store-assets && npm run test:coverage"
   },
   "engines": {
     "node": ">=24"

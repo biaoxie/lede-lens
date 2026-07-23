@@ -16,6 +16,8 @@ LedeLens is currently a proof of concept that sends requests directly from its p
 
 This design reduces persistence but cannot make a browser-held API key equivalent to a server-side secret. Use a restricted project key, monitor usage, and revoke a key immediately if exposure is suspected.
 
+See [PRIVACY.md](PRIVACY.md) for the data-handling, third-party transfer, retention, and deletion policy.
+
 ## Untrusted content
 
 Extracted articles are untrusted input. Content scripts collect article text and paragraph identifiers only. The side panel sends the canonical system instruction separately from article data, requires Structured Outputs, and validates the result locally before rendering it.

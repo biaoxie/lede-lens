@@ -92,6 +92,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         return getCachedAnalysis(message.payload || {});
       case "SAVE_CACHED_ANALYSIS":
         return saveCachedAnalysis(message.payload || {});
+      case "CLEAR_ANALYSIS_CACHE":
+        await chrome.storage.local.remove(ANALYSIS_CACHE_KEY);
+        return { cleared: true };
       case "CLEAR_API_KEY":
         await chrome.storage.session.remove("openaiApiKey");
         return getSettings();

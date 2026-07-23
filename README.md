@@ -23,7 +23,7 @@ An article can report accurate facts and still reach beyond what those facts sup
 
 For each analysis, LedeLens gives readers:
 
-- **A clear overall finding** — from **Structurally solid** to **Severely under-supported**
+- **A clear overall finding** — from **Well supported** to **Very little support**
 - **Five practical questions** — covering evidence, sourcing, causality, context, and the separation of fact from interpretation
 - **What to watch** — up to three material weaknesses, such as unsupported causation, missing baselines, one-sided sourcing, or certainty inflation
 - **A bounded conclusion** — the strongest conclusion the article can support on its own terms
@@ -110,11 +110,11 @@ LedeLens currently calls OpenAI directly from the Chrome side panel. This keeps 
 - Chrome clears it when the browser session ends.
 - LedeLens does not intentionally log, sync, or commit the key.
 - OpenAI requests use `store: false`.
-- Only content extracted for the analysis you request is sent to OpenAI.
+- Only article text and metadata extracted for the analysis you request are sent to OpenAI; the page URL is not sent.
 
-Successful reports are stored in `chrome.storage.local` so reopening the same unchanged article does not require another API call. Each entry contains the report, normalized article URL, and a non-reversible content fingerprint. The cache is local to the browser profile, is not synchronized with Chrome Sync, and is limited to 30 reports. A changed article does not reuse its earlier cached report.
+Successful reports are stored in `chrome.storage.local` so reopening the same unchanged article does not require another API call. Each entry contains the report, an article URL stripped of query parameters and fragments, and a non-reversible content fingerprint. The cache is local to the browser profile, is not synchronized with Chrome Sync, and is limited to 30 reports. A changed article does not reuse its earlier cached report. Use **Clear saved analyses** in settings to delete the cache.
 
-Use a restricted OpenAI project key, monitor its usage, and review [SECURITY.md](SECURITY.md) before using a valuable or broadly privileged key.
+Read the [Privacy Policy](PRIVACY.md), use a restricted OpenAI project key, monitor its usage, and review [SECURITY.md](SECURITY.md) before using a valuable or broadly privileged key.
 
 ## Model selection and request behavior
 
@@ -141,10 +141,16 @@ Verification includes static integration checks and enforces at least 95% line, 
 
 Mozilla Readability is the only runtime dependency. It processes a cloned document locally; no separate extraction service receives the page. After changing extension files, reload LedeLens from `chrome://extensions` and refresh the article tab.
 
+The browser-ready Readability source and its license are vendored in
+`src/vendor/mozilla-readability/`; the npm dependency remains the upstream
+provenance used for updates.
+
 ### Project layout
 
 ```text
 manifest.json                         Chrome extension manifest
+assets/icons/                        Packaged extension icons
+design/brand/                        Editable Open Frame logo sources
 src/background.js                    Settings, cache, and side-panel lifecycle
 src/content.js                       Article extraction, source mapping, and highlighting
 src/lib/openai.js                    OpenAI streaming, parsing, and result validation
@@ -154,6 +160,7 @@ src/sidepanel/                        Side-panel interface
 skills/analyze-news-structure/        Provider-neutral analysis contract
 tests/                                Node test suite
 scripts/check.mjs                     Static repository checks
+store/                                Chrome Web Store copy, demo, and promotional assets
 ```
 
 ## Contributing

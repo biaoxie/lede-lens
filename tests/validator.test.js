@@ -7,7 +7,9 @@ import { validateAnalysisResult, validateJsonSchema } from "../src/lib/validator
 const schema = JSON.parse(
   await readFile(new URL("../skills/analyze-news-structure/assets/output-schema.json", import.meta.url), "utf8"),
 );
-const fixture = JSON.parse(await readFile(new URL("../test.json", import.meta.url), "utf8"));
+const fixture = JSON.parse(
+  await readFile(new URL("./fixtures/analysis-result-0.2.0.json", import.meta.url), "utf8"),
+);
 const paragraphIds = Array.from({ length: 33 }, (_, index) => `p${index + 1}`);
 
 test("accepts the canonical example", () => {

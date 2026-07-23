@@ -7,9 +7,12 @@ import { analyzeArticle, parseSseBuffer, readOutputText, withRequestReference } 
 const schema = JSON.parse(
   await readFile(new URL("../skills/analyze-news-structure/assets/output-schema.json", import.meta.url), "utf8"),
 );
-const fixture = JSON.parse(await readFile(new URL("../test.json", import.meta.url), "utf8"));
+const fixture = JSON.parse(
+  await readFile(new URL("./fixtures/analysis-result-0.2.0.json", import.meta.url), "utf8"),
+);
 const article = {
   title: "Coverage fixture",
+  url: "https://example.com/story?private=token",
   paragraphs: Array.from({ length: 33 }, (_, index) => ({
     id: `p${index + 1}`,
     text: `Paragraph ${index + 1}`,
@@ -63,6 +66,9 @@ function installFetch(apiResponse) {
     assert.equal(request.stream, true);
     assert.equal("reasoning" in request, false);
     assert.equal(request.text.verbosity, "low");
+    const providerArticle = JSON.parse(request.input);
+    assert.equal(providerArticle.title, article.title);
+    assert.equal("url" in providerArticle, false);
     if (apiResponse instanceof Error) throw apiResponse;
     return typeof apiResponse === "function" ? apiResponse() : apiResponse;
   };

@@ -9,6 +9,13 @@
     return (value || "").replace(/\s+/g, " ").trim();
   }
 
+  function pageUrlWithoutParameters() {
+    const url = new URL(location.href);
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  }
+
   function isVisible(element) {
     const style = getComputedStyle(element);
     const rect = element.getBoundingClientRect();
@@ -209,7 +216,7 @@
       requested_language: "match_article",
       title: cleanText(metadata.title) || cleanText(document.querySelector("h1")?.innerText)
         || cleanText(document.title) || "Untitled article",
-      url: location.href,
+      url: pageUrlWithoutParameters(),
       byline: cleanText(metadata.byline) || getMeta([
         "[rel='author']",
         "[class*='byline' i]",
