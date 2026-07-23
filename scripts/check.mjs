@@ -10,6 +10,7 @@ const requiredFiles = [
   "src/background.js",
   "src/content.js",
   "src/lib/openai.js",
+  "src/lib/ratings.js",
   "node_modules/@mozilla/readability/Readability.js",
   "src/sidepanel/index.html",
   "src/sidepanel/panel.js",
@@ -34,6 +35,8 @@ assert.match(backgroundSource, /chrome\.action\.onClicked\.addListener/);
 assert.match(backgroundSource, /openPanelOnActionClick: false/);
 assert.doesNotMatch(backgroundSource, /api\.openai\.com/, "Long OpenAI requests must not run in the service worker.");
 assert.match(openaiSource, /X-Client-Request-Id/);
+assert.match(openaiSource, /stream: true/);
+assert.match(openaiSource, /response\.output_text\.delta/);
 
 const contentSource = await readFile("src/content.js", "utf8");
 assert.match(contentSource, /new globalThis\.Readability\(document\.cloneNode\(true\)/);
@@ -50,6 +53,7 @@ const sourceFiles = [
   "src/content.js",
   "src/lib/models.js",
   "src/lib/openai.js",
+  "src/lib/ratings.js",
   "src/lib/validator.js",
   "src/sidepanel/panel.js",
   "scripts/check.mjs",

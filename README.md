@@ -64,7 +64,7 @@ Direct browser-to-provider calls are a deliberate proof-of-concept tradeoff. Led
 
 A browser extension remains a sensitive place for a provider credential. Review [SECURITY.md](SECURITY.md) before using LedeLens with a valuable or broadly privileged key. A production distribution should consider a scoped token broker or local companion.
 
-Long-running model requests execute in the open side panel rather than the Manifest V3 service worker. This avoids Chrome's service-worker fetch timeout while keeping credentials inside extension contexts and out of article pages. Each OpenAI call includes a unique client request ID so network failures can be traced without exposing the API key.
+Long-running model requests execute in the open side panel rather than the Manifest V3 service worker. They use the Responses API's server-sent event stream so the connection receives lifecycle events and output while the model works. This avoids idle fetch timeouts while keeping credentials inside extension contexts and out of article pages. Each OpenAI call includes a unique client request ID so network failures can be traced without exposing the API key.
 
 ## Development
 
@@ -80,6 +80,8 @@ Install dependencies and run the repository checks:
 npm ci
 npm run verify
 ```
+
+`npm run verify` enforces at least 95% line, branch, and function coverage across the unit-testable core modules in `src/lib/`, in addition to static checks for the Chrome integration files.
 
 Mozilla Readability is the only runtime package dependency. It runs locally against a cloned document; LedeLens does not send the page to a separate extraction service. Reload the extension from `chrome://extensions` after changing source files.
 

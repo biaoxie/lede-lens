@@ -1,5 +1,6 @@
 import { MODEL_CATALOG } from "../lib/models.js";
 import { analyzeArticle } from "../lib/openai.js";
+import { EVIDENCE_RATINGS, PRESENTATION_RATINGS, findRating } from "../lib/ratings.js";
 
 const state = {
   mode: "article",
@@ -201,19 +202,83 @@ function section(title, className = "") {
   return container;
 }
 
+function ratingHelp(title, ratings, activeValue) {
+  const wrapper = document.createElement("span");
+  wrapper.className = "rating-help";
+
+  const button = document.createElement("button");
+  button.className = "rating-help-button";
+  button.type = "button";
+  button.textContent = "?";
+  button.setAttribute("aria-label", `Explain ${title.toLowerCase()} ratings`);
+
+  const popover = document.createElement("span");
+  popover.className = "rating-popover";
+  popover.setAttribute("role", "tooltip");
+
+  const heading = document.createElement("strong");
+  heading.textContent = title;
+  const list = document.createElement("span");
+  list.className = "rating-options";
+
+  for (const rating of ratings) {
+    const option = document.createElement("span");
+    option.className = `rating-option tone-${rating.tone}`;
+    if (rating.value === activeValue) {
+      option.classList.add("current");
+      option.setAttribute("aria-current", "true");
+    }
+    const label = document.createElement("b");
+    label.textContent = rating.label;
+    const explanation = document.createElement("span");
+    explanation.textContent = rating.explanation;
+    option.append(label, explanation);
+    list.append(option);
+  }
+
+  popover.append(heading, list);
+  wrapper.append(button, popover);
+  return wrapper;
+}
+
 function renderAssessment(result) {
-  const container = section("Structural assessment", "assessment");
+  const evidence = findRating(EVIDENCE_RATINGS, result.structural_assessment.evidence_structure);
+  const presentation = findRating(PRESENTATION_RATINGS, result.structural_assessment.presentation_style);
+  const container = document.createElement("section");
+  container.className = `result-section assessment verdict-${evidence.tone}`;
+
   const eyebrow = document.createElement("p");
   eyebrow.className = "eyebrow";
   eyebrow.textContent = "Overall finding";
-  container.prepend(eyebrow);
-  container.append(
-    tag(result.structural_assessment.evidence_structure),
-    tag(result.structural_assessment.presentation_style),
+
+  const verdictRow = document.createElement("div");
+  verdictRow.className = "verdict-row";
+  const verdict = document.createElement("h2");
+  verdict.className = "verdict-value";
+  verdict.textContent = evidence.label;
+  verdictRow.append(verdict, ratingHelp("Evidence strength", EVIDENCE_RATINGS, evidence.value));
+
+  const plainMeaning = document.createElement("p");
+  plainMeaning.className = "verdict-meaning";
+  plainMeaning.textContent = evidence.summary;
+
+  const styleRow = document.createElement("div");
+  styleRow.className = "presentation-row";
+  const styleLabel = document.createElement("span");
+  styleLabel.textContent = "Presentation style";
+  const styleValue = document.createElement("strong");
+  styleValue.className = `presentation-value tone-${presentation.tone}`;
+  styleValue.textContent = presentation.label;
+  styleRow.append(
+    styleLabel,
+    styleValue,
+    ratingHelp("Presentation style", PRESENTATION_RATINGS, presentation.value),
   );
+
   const summary = document.createElement("p");
+  summary.className = "assessment-summary";
   summary.textContent = result.structural_assessment.one_sentence;
-  container.append(summary);
+  container.append(eyebrow, verdictRow, plainMeaning, styleRow, summary);
   return container;
 }
 
@@ -327,9 +392,11 @@ async function analyze() {
       `Prepared ${article.paragraphs.length} source paragraphs and sending them to OpenAI.`,
     );
     narrateModelWait(article.paragraphs.length);
-    const { result } = await analyzeArticle(article, ({ type }) => {
-      if (type === "response_received") {
-        setProgress("validate", "Checking the model response", "OpenAI responded. Parsing and validating the report locally.");
+    const { result } = await analyzeArticle(article, ({ type, eventType }) => {
+      if (type === "response_started") {
+        setProgress("analyze", "OpenAI accepted the request", "The live response stream is connected. Waiting for the model's analysis.");
+      } else if (type === "stream_event" && eventType === "response.output_text.delta") {
+        setProgress("analyze", "Receiving the structured report", "OpenAI is streaming the analysis back to LedeLens.");
       } else if (type === "validating") {
         setProgress("validate", "Validating every reference", "Checking the schema, claim links, and paragraph references.");
       }
