@@ -1,4 +1,7 @@
 import { fetchAnalysisModels, isAnalysisModel } from "./lib/models.js";
+import { findCachedAnalysis, upsertCachedAnalysis } from "./lib/cache.js";
+
+const ANALYSIS_CACHE_KEY = "analysisCache";
 
 function configureActionBehavior() {
   return chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
@@ -10,7 +13,9 @@ chrome.runtime.onStartup.addListener(() => configureActionBehavior().catch(() =>
 
 chrome.action.onClicked.addListener((tab) => {
   if (!tab.id) return;
-  chrome.sidePanel.open({ tabId: tab.id }).catch(() => {});
+  chrome.sidePanel.open({ tabId: tab.id })
+    .then(() => chrome.runtime.sendMessage({ type: "PAGE_ACCESS_GRANTED", tabId: tab.id }).catch(() => {}))
+    .catch(() => {});
 });
 
 async function getSettings() {
@@ -53,7 +58,28 @@ async function saveSettings({ model, apiKey }) {
   return getSettings();
 }
 
+async function getCachedAnalysis({ url, fingerprint } = {}) {
+  const { [ANALYSIS_CACHE_KEY]: entries = [] } = await chrome.storage.local.get({
+    [ANALYSIS_CACHE_KEY]: [],
+  });
+  const entry = findCachedAnalysis(entries, url, fingerprint);
+  return entry
+    ? { hit: true, result: entry.result, savedAt: entry.savedAt }
+    : { hit: false };
+}
+
+async function saveCachedAnalysis({ url, fingerprint, result } = {}) {
+  const { [ANALYSIS_CACHE_KEY]: entries = [] } = await chrome.storage.local.get({
+    [ANALYSIS_CACHE_KEY]: [],
+  });
+  const nextEntries = upsertCachedAnalysis(entries, { url, fingerprint, result });
+  await chrome.storage.local.set({ [ANALYSIS_CACHE_KEY]: nextEntries });
+  return { saved: true };
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === "PAGE_ACCESS_GRANTED") return false;
+
   (async () => {
     switch (message?.type) {
       case "GET_SETTINGS":
@@ -62,6 +88,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         return listModels(message.payload || {});
       case "SAVE_SETTINGS":
         return saveSettings(message.payload || {});
+      case "GET_CACHED_ANALYSIS":
+        return getCachedAnalysis(message.payload || {});
+      case "SAVE_CACHED_ANALYSIS":
+        return saveCachedAnalysis(message.payload || {});
       case "CLEAR_API_KEY":
         await chrome.storage.session.remove("openaiApiKey");
         return getSettings();

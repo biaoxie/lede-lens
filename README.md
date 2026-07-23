@@ -23,6 +23,7 @@ LedeLens is an early proof of concept. The first release:
 - calls the OpenAI Responses API directly from the persistent side panel;
 - lists the compatible GPT-5 models available to the user's OpenAI API key and requires an explicit selection;
 - stores the OpenAI API key in `chrome.storage.session`, which Chrome clears when the browser session ends;
+- saves up to 30 successful page analyses in local extension storage and restores them when the same article content is opened again;
 - validates every model result locally against JSON Schema before rendering it.
 
 See [quick-start.md](quick-start.md) to load the extension locally.
@@ -43,6 +44,7 @@ article page
   -> persistent side panel reads the session-only API key
   -> OpenAI Responses API returns Structured Outputs
   -> local schema and reference validation
+  -> successful result is cached by normalized URL and article-content fingerprint
   -> side panel renders the verdict, metrics, issues, conclusion, and paragraph links
 ```
 
@@ -59,6 +61,8 @@ Direct browser-to-provider calls are a deliberate proof-of-concept tradeoff. Led
 - does not log, sync, or commit API keys;
 - sends only the extracted page content required for the requested analysis;
 - sets `store: false` on OpenAI Responses API requests.
+
+Successful analysis results, normalized article URLs, and non-reversible content fingerprints are stored in `chrome.storage.local` so a page can be reopened without another API call. The cache is limited to 30 entries, is not synchronized through Chrome Sync, and is invalidated when the extracted article content changes.
 
 A browser extension remains a sensitive place for a provider credential. Review [SECURITY.md](SECURITY.md) before using LedeLens with a valuable or broadly privileged key. A production distribution should consider a scoped token broker or local companion.
 

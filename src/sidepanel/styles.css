@@ -47,6 +47,62 @@ h1 { margin-bottom: 0; font-size: 28px; letter-spacing: -0.04em; }
 h2 { margin-bottom: 8px; font-size: 21px; line-height: 1.15; }
 h3 { margin-bottom: 5px; font-size: 17px; }
 
+.product-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.product-info {
+  position: relative;
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+  cursor: help;
+}
+
+.product-info svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.5;
+}
+
+.product-tooltip {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 9px);
+  left: 50%;
+  width: min(300px, calc(100vw - 40px));
+  padding: 10px 12px;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  color: var(--card);
+  background: var(--ink);
+  box-shadow: 0 6px 18px rgba(27, 27, 25, 0.2);
+  font-size: 12px;
+  line-height: 1.45;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-45%) translateY(-3px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.product-info:hover .product-tooltip,
+.product-info:focus-visible .product-tooltip {
+  opacity: 1;
+  transform: translateX(-45%) translateY(0);
+}
+
+.product-info:focus-visible {
+  border-radius: 50%;
+  outline: 3px solid rgba(184, 74, 43, 0.25);
+  outline-offset: 2px;
+}
+
 .eyebrow {
   margin-bottom: 4px;
   color: var(--accent-dark);
@@ -358,11 +414,17 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid rgba(184, 7
 
 footer {
   display: flex;
+  align-items: flex-start;
+  gap: 16px;
   justify-content: space-between;
   padding: 5px 18px 18px;
   color: var(--muted);
   font-family: Georgia, "Times New Roman", serif;
   font-size: 11px;
+  line-height: 1.45;
 }
+
+footer .disclaimer { max-width: 420px; }
+footer span:last-child { flex: 0 0 auto; }
 
 [hidden] { display: none !important; }

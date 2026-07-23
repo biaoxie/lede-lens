@@ -9,6 +9,7 @@ const requiredFiles = [
   "manifest.json",
   "src/background.js",
   "src/content.js",
+  "src/lib/cache.js",
   "src/lib/openai.js",
   "src/lib/ratings.js",
   "node_modules/@mozilla/readability/Readability.js",
@@ -34,6 +35,9 @@ assert.ok(manifest.permissions.includes("storage"));
 assert.ok(!manifest.permissions.includes("tabs"), "Avoid broad tabs permission.");
 assert.match(backgroundSource, /chrome\.action\.onClicked\.addListener/);
 assert.match(backgroundSource, /openPanelOnActionClick: false/);
+assert.match(backgroundSource, /PAGE_ACCESS_GRANTED/);
+assert.match(backgroundSource, /GET_CACHED_ANALYSIS/);
+assert.match(backgroundSource, /SAVE_CACHED_ANALYSIS/);
 assert.doesNotMatch(backgroundSource, /api\.openai\.com/, "Long OpenAI requests must not run in the service worker.");
 assert.match(openaiSource, /X-Client-Request-Id/);
 assert.match(openaiSource, /stream: true/);
@@ -72,6 +76,7 @@ assert.equal(schema.properties.issues.maxItems, 3);
 const sourceFiles = [
   "src/background.js",
   "src/content.js",
+  "src/lib/cache.js",
   "src/lib/models.js",
   "src/lib/openai.js",
   "src/lib/ratings.js",

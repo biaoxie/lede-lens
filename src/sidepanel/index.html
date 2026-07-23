@@ -10,7 +10,16 @@
     <header class="masthead">
       <div>
         <p class="eyebrow">News structure audit</p>
-        <h1>LedeLens</h1>
+        <div class="product-title">
+          <h1>LedeLens</h1>
+          <span class="product-info" tabindex="0" aria-label="About LedeLens" aria-describedby="product-description">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <circle cx="10" cy="10" r="8.5"></circle>
+              <path d="M10 8.3v6M10 5.5h.01"></path>
+            </svg>
+            <span id="product-description" class="product-tooltip" role="tooltip">See how well a news article supports its conclusions, handles cause and effect, and separates facts from interpretation and uncertainty—without fact-checking or judging its political viewpoint.</span>
+          </span>
+        </div>
       </div>
       <button id="settings-toggle" class="icon-button" type="button" aria-label="Open settings" title="Settings">⚙</button>
     </header>
@@ -59,8 +68,8 @@
 
         <div id="empty-state" class="empty-state">
           <div class="lens-mark" aria-hidden="true"></div>
-          <h2>Inspect this article's reasoning</h2>
-          <p>Examine its evidence, causal reasoning, context, and framing—without fact-checking.</p>
+          <h2 id="empty-title">Inspect this article's reasoning</h2>
+          <p id="empty-description">Examine its evidence, causal reasoning, context, and framing—without fact-checking.</p>
         </div>
 
         <button id="analyze" class="primary full" type="button">Analyze article</button>
@@ -87,7 +96,7 @@
     </main>
 
     <footer>
-      <span>Structure, not truth.</span>
+      <span class="disclaimer">DISCLAIMER: LedeLens looks at how well an article supports its conclusions and separates reporting from interpretation. It does not fact-check the article or judge its political viewpoint.</span>
       <span>Schema 0.2.0</span>
     </footer>
 

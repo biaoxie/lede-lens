@@ -47,6 +47,10 @@ For a normal news article:
 3. Follow the live progress card as LedeLens extracts the source, waits for OpenAI, validates the response, and renders the report.
 4. Select any paragraph badge such as `p4` to scroll to and highlight that source paragraph.
 
+After a successful run, LedeLens saves the result locally. Opening the same unchanged article and clicking the LedeLens toolbar icon restores the saved report without another OpenAI request. Use **Re-analyze article** when you intentionally want a fresh result.
+
+If the side panel remains open while you switch tabs or navigate, it clears the previous page's report. Click the LedeLens toolbar icon once on the new page to refresh page access.
+
 For a specific passage:
 
 1. Select text on the web page.

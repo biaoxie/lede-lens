@@ -1,10 +1,13 @@
 import { analyzeArticle } from "../lib/openai.js";
 import { EVIDENCE_RATINGS, PRESENTATION_RATINGS, findRating } from "../lib/ratings.js";
+import { fingerprintArticle } from "../lib/cache.js";
 
 const state = {
   mode: "article",
   article: null,
+  articleFingerprint: null,
   settings: null,
+  pageRevision: 0,
 };
 
 const elements = {
@@ -14,7 +17,9 @@ const elements = {
   articlePreview: document.querySelector("#article-preview"),
   articleTitle: document.querySelector("#article-title"),
   clearKey: document.querySelector("#clear-key"),
+  emptyDescription: document.querySelector("#empty-description"),
   emptyState: document.querySelector("#empty-state"),
+  emptyTitle: document.querySelector("#empty-title"),
   keyStatus: document.querySelector("#key-status"),
   loadModels: document.querySelector("#load-models"),
   message: document.querySelector("#message"),
@@ -56,6 +61,7 @@ let progressInterval;
 let narrativeTimers = [];
 let progressStartedAt = 0;
 let activeProgressStep = null;
+let refreshTimer;
 
 function sendMessage(message) {
   return chrome.runtime.sendMessage(message).then((response) => {
@@ -67,6 +73,39 @@ function sendMessage(message) {
 function setMessage(text = "", isError = false) {
   elements.message.textContent = text;
   elements.message.classList.toggle("error", isError);
+}
+
+function defaultAnalyzeLabel() {
+  return state.mode === "article" ? "Analyze article" : "Analyze selected text";
+}
+
+function setEmptyState(title, description) {
+  elements.emptyTitle.textContent = title;
+  elements.emptyDescription.textContent = description;
+}
+
+function resetPageUi({ needsAccess = false } = {}) {
+  state.pageRevision += 1;
+  state.article = null;
+  state.articleFingerprint = null;
+  clearProgressTimers();
+  elements.progress.hidden = true;
+  elements.articlePreview.hidden = true;
+  elements.results.hidden = true;
+  elements.emptyState.hidden = false;
+  elements.analyze.textContent = defaultAnalyzeLabel();
+  elements.analyze.disabled = needsAccess;
+  if (needsAccess) {
+    setEmptyState(
+      "Refresh access for this page",
+      "Click the LedeLens toolbar icon once on this tab, then the side panel will refresh automatically.",
+    );
+  } else {
+    setEmptyState(
+      "Inspect this article's reasoning",
+      "Examine its evidence, causal reasoning, context, and framing—without fact-checking.",
+    );
+  }
 }
 
 function clearProgressTimers() {
@@ -238,14 +277,72 @@ async function runContentFunction(functionName, ...args) {
   }
 }
 
-async function extract() {
-  state.article = await runContentFunction("extract", state.mode);
-  elements.articleTitle.textContent = state.article.title;
-  const details = [state.article.byline, `${state.article.paragraphs.length} paragraphs`].filter(Boolean);
+async function extract(expectedRevision = state.pageRevision) {
+  const article = await runContentFunction("extract", state.mode);
+  if (expectedRevision !== state.pageRevision) return null;
+
+  state.article = article;
+  state.articleFingerprint = fingerprintArticle(article);
+  elements.articleTitle.textContent = article.title;
+  const details = [article.byline, `${article.paragraphs.length} paragraphs`].filter(Boolean);
   elements.articleMeta.textContent = details.join(" · ");
   elements.articlePreview.hidden = false;
   elements.emptyState.hidden = true;
-  return state.article;
+  return article;
+}
+
+async function loadCachedAnalysis(article, expectedRevision) {
+  const cached = await sendMessage({
+    type: "GET_CACHED_ANALYSIS",
+    payload: {
+      url: article.url,
+      fingerprint: state.articleFingerprint,
+    },
+  });
+  if (expectedRevision !== state.pageRevision || !cached.hit) return false;
+
+  renderResults(cached.result);
+  elements.analyze.textContent = state.mode === "article" ? "Re-analyze article" : "Re-analyze selected text";
+  setMessage("Loaded the saved analysis for this page.");
+  return true;
+}
+
+function showAccessPrompt(message = "") {
+  resetPageUi({ needsAccess: true });
+  setMessage(message || "Click the LedeLens toolbar icon on this tab to refresh page access.");
+}
+
+async function refreshCurrentPage() {
+  resetPageUi();
+  const expectedRevision = state.pageRevision;
+  setMessage("Checking this page for a saved analysis…");
+  try {
+    const article = await extract(expectedRevision);
+    if (!article || expectedRevision !== state.pageRevision) return;
+    const loaded = await loadCachedAnalysis(article, expectedRevision);
+    if (expectedRevision !== state.pageRevision) return;
+    if (!loaded) setMessage("This page is ready to analyze.");
+    elements.analyze.disabled = false;
+  } catch (error) {
+    if (expectedRevision !== state.pageRevision) return;
+    if (/Click the LedeLens toolbar icon|cannot access|missing host permission/i.test(error.message)) {
+      showAccessPrompt();
+    } else {
+      resetPageUi();
+      setMessage(error.message, true);
+    }
+  }
+}
+
+function schedulePageRefresh({ accessGranted = false } = {}) {
+  clearTimeout(refreshTimer);
+  resetPageUi({ needsAccess: !accessGranted });
+  setMessage(accessGranted
+    ? "Refreshing this page…"
+    : "Click the LedeLens toolbar icon on this tab to refresh page access.");
+  if (accessGranted) {
+    refreshTimer = setTimeout(refreshCurrentPage, 50);
+  }
 }
 
 function paragraphLinks(ids) {
@@ -422,12 +519,14 @@ function renderResults(result) {
 }
 
 async function analyze() {
+  const analysisRevision = state.pageRevision;
   elements.analyze.disabled = true;
   elements.results.hidden = true;
   setMessage("");
   startProgress();
   try {
-    const article = await extract();
+    const article = await extract(analysisRevision);
+    if (!article) return;
     setProgress(
       "analyze",
       "Analyzing article structure",
@@ -435,6 +534,7 @@ async function analyze() {
     );
     narrateModelWait(article.paragraphs.length);
     const { result, diagnostics } = await analyzeArticle(article, ({ type, eventType, elapsedMs }) => {
+      if (analysisRevision !== state.pageRevision) return;
       if (type === "response_started") {
         setProgress("analyze", "OpenAI accepted the request", "The live response stream is connected. The model is reasoning and preparing the report.");
       } else if (type === "first_output") {
@@ -445,16 +545,32 @@ async function analyze() {
         setProgress("validate", "Validating every reference", "Checking the schema, metrics, issues, and paragraph references.");
       }
     });
+    let cacheWarning = "";
+    try {
+      await sendMessage({
+        type: "SAVE_CACHED_ANALYSIS",
+        payload: {
+          url: article.url,
+          fingerprint: fingerprintArticle(article),
+          result,
+        },
+      });
+    } catch {
+      cacheWarning = "Analysis ready, but Chrome could not save it for this page.";
+    }
+    if (analysisRevision !== state.pageRevision) return;
     setProgress("render", "Building the report", "Organizing the assessment, metrics, issues, and source links.");
     renderResults(result);
+    elements.analyze.textContent = state.mode === "article" ? "Re-analyze article" : "Re-analyze selected text";
     completeProgress();
-    setMessage(formatDiagnostics(diagnostics));
+    setMessage(cacheWarning || formatDiagnostics(diagnostics));
   } catch (error) {
+    if (analysisRevision !== state.pageRevision) return;
     failProgress();
     setMessage(error.message, true);
     if (!state.settings?.hasApiKey) elements.settings.hidden = false;
   } finally {
-    elements.analyze.disabled = false;
+    if (analysisRevision === state.pageRevision) elements.analyze.disabled = false;
   }
 }
 
@@ -462,11 +578,7 @@ document.querySelectorAll(".mode").forEach((button) => {
   button.addEventListener("click", () => {
     state.mode = button.dataset.mode;
     document.querySelectorAll(".mode").forEach((candidate) => candidate.classList.toggle("active", candidate === button));
-    elements.analyze.textContent = state.mode === "article" ? "Analyze article" : "Analyze selected text";
-    elements.articlePreview.hidden = true;
-    elements.emptyState.hidden = false;
-    elements.results.hidden = true;
-    setMessage("");
+    refreshCurrentPage();
   });
 });
 
@@ -509,6 +621,29 @@ elements.apiKey.addEventListener("input", () => {
 });
 elements.analyze.addEventListener("click", analyze);
 
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.type === "PAGE_ACCESS_GRANTED") {
+    schedulePageRefresh({ accessGranted: true });
+  }
+});
+
+chrome.tabs.onActivated.addListener(({ tabId }) => {
+  activeTab()
+    .then((tab) => {
+      if (tab.id === tabId) schedulePageRefresh();
+    })
+    .catch(() => {});
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status !== "loading" && !changeInfo.url) return;
+  activeTab()
+    .then((tab) => {
+      if (tab.id === tabId) schedulePageRefresh();
+    })
+    .catch(() => {});
+});
+
 async function initialize() {
   try {
     state.settings = await sendMessage({ type: "GET_SETTINGS" });
@@ -520,6 +655,7 @@ async function initialize() {
   } catch (error) {
     setMessage(error.message, true);
   }
+  await refreshCurrentPage();
 }
 
 initialize();
