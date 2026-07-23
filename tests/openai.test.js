@@ -70,7 +70,7 @@ function installFetch(apiResponse) {
     assert.equal(providerArticle.title, article.title);
     assert.equal("url" in providerArticle, false);
     if (apiResponse instanceof Error) throw apiResponse;
-    return typeof apiResponse === "function" ? apiResponse() : apiResponse;
+    return typeof apiResponse === "function" ? apiResponse(options) : apiResponse;
   };
 }
 
@@ -223,6 +223,30 @@ test("reports network failures with a client request ID", async () => {
     () => analyzeArticle(article),
     /network connection ended.*Request ID: [0-9a-f-]{36}/i,
   );
+});
+
+test("passes AbortSignal to fetch and preserves cancellation as a distinct state", async () => {
+  const controller = new AbortController();
+  let observedSignal;
+  installFetch((options) => {
+    observedSignal = options.signal;
+    return new Promise((_resolve, reject) => {
+      options.signal.addEventListener("abort", () => {
+        reject(new DOMException("Aborted", "AbortError"));
+      }, { once: true });
+    });
+  });
+
+  const pending = analyzeArticle(article, () => {}, { signal: controller.signal });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  controller.abort("page_changed");
+  await assert.rejects(pending, (error) => {
+    assert.equal(error.category, "cancelled");
+    assert.equal(error.details.reason, "page_changed");
+    assert.match(error.details.requestId, /^[0-9a-f-]{36}$/);
+    return true;
+  });
+  assert.equal(observedSignal, controller.signal);
 });
 
 test("surfaces JSON and non-JSON HTTP errors", async () => {

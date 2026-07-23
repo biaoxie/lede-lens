@@ -263,6 +263,7 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid rgba(184, 7
 .progress-steps li.complete::before { border-color: var(--green); background: var(--green); }
 .progress.failed { border-color: #d9aaa2; background: #fbebe7; }
 .progress.failed .spinner { border-color: #e1b8b1; border-top-color: var(--red); animation: none; }
+.cancel-analysis { width: 100%; margin-top: 11px; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 

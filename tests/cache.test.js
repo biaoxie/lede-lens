@@ -6,6 +6,7 @@ import {
   findCachedAnalysis,
   fingerprintArticle,
   normalizeArticleUrl,
+  removeCachedAnalysis,
   upsertCachedAnalysis,
 } from "../src/lib/cache.js";
 
@@ -93,5 +94,23 @@ test("rejects incomplete cache entries", () => {
   assert.throws(
     () => upsertCachedAnalysis([], { url: "https://example.com", fingerprint: "x" }),
     /valid article URL/,
+  );
+});
+
+test("removes only the stale analysis matching a page and fingerprint", () => {
+  const entries = [
+    { url: "https://example.com/story", fingerprint: "old", savedAt: 10 },
+    { url: "https://example.com/story", fingerprint: "current", savedAt: 20 },
+    { url: "https://example.com/other", fingerprint: "old", savedAt: 30 },
+  ];
+  assert.deepEqual(
+    removeCachedAnalysis(entries, "https://example.com/story?view=full#top", "old"),
+    entries.slice(1),
+  );
+  assert.deepEqual(removeCachedAnalysis(entries, "invalid", "old"), entries);
+  assert.deepEqual(removeCachedAnalysis(null, "invalid", ""), []);
+  assert.deepEqual(
+    removeCachedAnalysis(entries, "https://example.com/story", "old", 99),
+    entries,
   );
 });
