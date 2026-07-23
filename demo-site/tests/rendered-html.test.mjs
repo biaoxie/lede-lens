@@ -23,7 +23,14 @@ async function render() {
   );
 }
 
-test("server-renders the interactive LedeLens demo", async () => {
+test("server-renders the interactive LedeLens demo", async (t) => {
+  try {
+    await access(new URL("../dist/server/index.js", import.meta.url));
+  } catch {
+    t.skip("Build the demo before running its server-render test.");
+    return;
+  }
+
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
@@ -33,14 +40,18 @@ test("server-renders the interactive LedeLens demo", async () => {
   assert.match(html, /See how an article/);
   assert.match(html, /Try the interactive demo/);
   assert.match(html, /Fictional demonstration article/);
-  assert.match(html, /No API key needed/);
+  assert.match(html, /Saved demo result · no API key used/);
   assert.match(html, /Open LedeLens/);
-  assert.match(html, /City library extends weekend hours after six-month pilot/);
-  assert.match(html, /saved analysis fixture/);
+  assert.match(html, /City library extends weekend hours/);
+  assert.match(html, /Saved LedeLens result/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Starter Project/);
 });
 
 test("ships a complete, static analysis fixture and social card", async () => {
+  const componentSource = await readFile(
+    new URL("../app/DemoExperience.tsx", import.meta.url),
+    "utf8",
+  );
   const fixture = JSON.parse(
     await readFile(new URL("../app/fixtures/library-analysis.json", import.meta.url), "utf8"),
   );
@@ -48,7 +59,7 @@ test("ships a complete, static analysis fixture and social card", async () => {
   assert.equal(fixture.schema_version, "0.2.0");
   assert.equal(fixture.structural_assessment.evidence_structure, "structurally_solid");
   assert.equal(fixture.structural_assessment.presentation_style, "restrained");
-  assert.equal(fixture.article_metrics.causal_support.status, "not_applicable");
+  assert.equal(fixture.article_metrics.causal_support.status, "present");
   assert.deepEqual(Object.keys(fixture.article_metrics), [
     "evidence_coverage",
     "source_traceability",
@@ -57,5 +68,15 @@ test("ships a complete, static analysis fixture and social card", async () => {
     "framing_uncertainty_separation",
   ]);
   assert.equal(fixture.issues.length, 1);
+  assert.equal(fixture.issues[0].severity, "medium");
+  const referencedParagraphs = [
+    ...Object.values(fixture.article_metrics).flatMap((metric) => metric.paragraph_ids),
+    ...fixture.issues.flatMap((issue) => issue.paragraph_ids),
+  ];
+  assert.ok(referencedParagraphs.every((id) => /^p(?:[1-9]|10)$/.test(id)));
+  assert.match(componentSource, /Chrome extension uses your OpenAI API key/);
+  assert.match(componentSource, /10 paragraphs/);
+  assert.match(componentSource, /Saved result timing: OpenAI first output 2\.2s · total 7\.3s · 0 reasoning tokens/);
+  assert.match(componentSource, /Schema 0\.2\.0/);
   await access(new URL("../public/og.png", import.meta.url));
 });
