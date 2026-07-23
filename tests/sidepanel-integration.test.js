@@ -86,6 +86,18 @@ test("selected-passage mode provides a preflight preview and actionable empty st
   assert.doesNotMatch(panelSource, /passagePreview\.innerHTML/);
 });
 
+test("content-script validation errors are returned without escaping into Chrome's error log", () => {
+  const runner = panelSource.match(
+    /async function runContentFunction\(functionName, \.\.\.args\) \{(?<body>[\s\S]*?)\n\}/,
+  );
+  assert.ok(runner?.groups?.body);
+  assert.match(runner.groups.body, /try \{/);
+  assert.match(runner.groups.body, /return\s+\{\s+ok: false,/);
+  assert.match(runner.groups.body, /error instanceof Error \? error\.message : String\(error\)/);
+  assert.match(runner.groups.body, /if \(!execution\?\.result\?\.ok\)/);
+  assert.match(runner.groups.body, /return execution\.result\.value/);
+});
+
 test("partial extraction and privacy copy are visible before a paid request", () => {
   assert.match(panelMarkup, /Partial article detected/);
   assert.match(panelMarkup, /Use selected passage instead/);
