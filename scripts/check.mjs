@@ -23,6 +23,8 @@ const requiredFiles = [
   "src/lib/cache.js",
   "src/lib/openai.js",
   "src/lib/ratings.js",
+  "src/lib/settings.js",
+  "src/lib/ui-state.js",
   "src/vendor/mozilla-readability/Readability.js",
   "src/vendor/mozilla-readability/LICENSE.md",
   "src/vendor/mozilla-readability/UPSTREAM.md",

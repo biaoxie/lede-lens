@@ -125,7 +125,7 @@ Read the [Privacy Policy](PRIVACY.md), use a restricted OpenAI project key, moni
 
 LedeLens requests `/v1/models` with the API key you provide and lets you explicitly select a compatible GPT-5 model. It does not hard-code a reasoning effort; the selected model uses its default. Low output verbosity reduces redundant JSON prose without removing any part of the analysis contract.
 
-Requests use the OpenAI Responses API event stream. The side panel shows progress while the model works and reports time to first output, total request time, and reasoning-token usage when OpenAI provides it.
+Requests use the OpenAI Responses API event stream. The side panel describes observable progress while a report is generated and shows the total completion time. A collapsed **Technical details** section keeps time to first output, reasoning-token usage, request ID, model, and schema available when OpenAI provides them.
 
 ## Page access and cached reports
 

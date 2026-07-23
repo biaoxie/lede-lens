@@ -1,20 +1,22 @@
 import { isAnalysisModel } from "./models.js";
 import { validateAnalysisResult } from "./validator.js";
+import {
+  ERROR_CATEGORIES,
+  analysisError,
+  isAbortError,
+} from "./analysis-flow.js";
 
 const OPENAI_ENDPOINT = "https://api.openai.com/v1/responses";
 
 let assetsPromise;
 
 function cancelledRequest(signal, requestId, cause) {
-  const error = new Error("The analysis request was cancelled.", { cause });
-  error.name = "AnalysisCancelledError";
-  error.category = "cancelled";
-  error.details = { reason: signal?.reason || "user_cancelled", requestId };
-  return error;
-}
-
-function wasAborted(error, signal) {
-  return Boolean(signal?.aborted || error?.name === "AbortError");
+  return analysisError(
+    ERROR_CATEGORIES.CANCELLED,
+    "The analysis request was cancelled.",
+    { reason: signal?.reason || "user_cancelled", requestId },
+    cause,
+  );
 }
 
 async function loadAssets() {
@@ -180,13 +182,18 @@ export async function analyzeArticle(article, onProgress = () => {}, { signal } 
       signal,
     });
   } catch (error) {
-    if (wasAborted(error, signal)) {
+    if (isAbortError(error, signal)) {
       throw cancelledRequest(signal, clientRequestId, error);
     }
-    throw new Error(withRequestReference(
-      "The network connection ended before LedeLens received OpenAI's response.",
-      clientRequestId,
-    ), { cause: error });
+    throw analysisError(
+      ERROR_CATEGORIES.NETWORK,
+      withRequestReference(
+        "The network connection ended before LedeLens received OpenAI's response.",
+        clientRequestId,
+      ),
+      { requestId: clientRequestId },
+      error,
+    );
   }
 
   const requestId = response.headers.get("x-request-id") || clientRequestId;
@@ -196,10 +203,23 @@ export async function analyzeArticle(article, onProgress = () => {}, { signal } 
     try {
       responseBody = responseText ? JSON.parse(responseText) : null;
     } catch {
-      throw new Error(withRequestReference("OpenAI returned an unreadable error response.", requestId));
+      throw analysisError(
+        ERROR_CATEGORIES.UNKNOWN,
+        withRequestReference("OpenAI returned an unreadable error response.", requestId),
+        { requestId, status: response.status },
+      );
     }
     const message = responseBody?.error?.message || `OpenAI request failed with HTTP ${response.status}.`;
-    throw new Error(withRequestReference(message, requestId));
+    const errorCode = responseBody?.error?.code;
+    let category = ERROR_CATEGORIES.UNKNOWN;
+    if (response.status === 401 || response.status === 403) category = ERROR_CATEGORIES.INVALID_KEY;
+    else if (response.status === 402 || errorCode === "insufficient_quota") category = ERROR_CATEGORIES.BILLING;
+    else if (response.status === 429) category = ERROR_CATEGORIES.RATE_LIMIT;
+    throw analysisError(
+      category,
+      withRequestReference(message, requestId),
+      { requestId, status: response.status, errorCode },
+    );
   }
 
   onProgress({ type: "response_started", requestId });
@@ -207,10 +227,18 @@ export async function analyzeArticle(article, onProgress = () => {}, { signal } 
   try {
     streamed = await readResponseStream(response, onProgress, requestStartedAt);
   } catch (error) {
-    if (wasAborted(error, signal)) {
+    if (isAbortError(error, signal)) {
       throw cancelledRequest(signal, requestId, error);
     }
-    throw new Error(withRequestReference(error.message, requestId), { cause: error });
+    const category = error instanceof TypeError || /network|connection|terminated|fetch/i.test(error.message)
+      ? ERROR_CATEGORIES.NETWORK
+      : ERROR_CATEGORIES.INVALID_OUTPUT;
+    throw analysisError(
+      category,
+      withRequestReference(error.message, requestId),
+      { requestId },
+      error,
+    );
   }
 
   let result;
@@ -218,7 +246,11 @@ export async function analyzeArticle(article, onProgress = () => {}, { signal } 
     result = JSON.parse(streamed.outputText);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      throw new Error(withRequestReference("OpenAI returned malformed JSON.", streamed.requestId || requestId));
+      throw analysisError(
+        ERROR_CATEGORIES.INVALID_OUTPUT,
+        withRequestReference("OpenAI returned malformed JSON.", streamed.requestId || requestId),
+        { requestId: streamed.requestId || requestId },
+      );
     }
     throw new Error(withRequestReference(error.message, streamed.requestId || requestId), { cause: error });
   }
@@ -232,7 +264,11 @@ export async function analyzeArticle(article, onProgress = () => {}, { signal } 
   );
   if (!validation.valid) {
     const message = `The model response failed local validation: ${validation.errors.slice(0, 3).join(" ")}`;
-    throw new Error(withRequestReference(message, finalRequestId));
+    throw analysisError(
+      ERROR_CATEGORIES.INVALID_OUTPUT,
+      withRequestReference(message, finalRequestId),
+      { requestId: finalRequestId },
+    );
   }
 
   return { result, requestId: finalRequestId, diagnostics: streamed.diagnostics };

@@ -21,49 +21,71 @@
           </span>
         </div>
       </div>
-      <button id="settings-toggle" class="icon-button" type="button" aria-label="Open settings" title="Settings">⚙</button>
+      <button id="settings-toggle" class="icon-button" type="button" aria-label="Open settings" aria-controls="settings" aria-expanded="false" title="Settings">⚙</button>
     </header>
 
     <main>
-      <section id="settings" class="panel" hidden>
+      <section id="settings" class="panel settings-panel" tabindex="-1" hidden>
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Configuration</p>
-            <h2>OpenAI</h2>
+            <p class="eyebrow">Settings</p>
+            <h2>OpenAI connection</h2>
           </div>
-          <span id="key-status" class="status-pill">Not configured</span>
+          <span id="key-status" class="status-pill disconnected">Not connected</span>
         </div>
 
         <form id="settings-form">
+          <ol class="setup-steps" aria-label="Connection setup">
+            <li>Enter key</li>
+            <li>Load models</li>
+            <li>Choose model</li>
+          </ol>
+
           <label for="api-key">API key</label>
           <input id="api-key" name="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…" />
           <p class="help">The key is stored only in Chrome's session storage and is cleared when the browser closes.</p>
 
-          <button id="load-models" class="quiet small" type="button">Load available models</button>
+          <button id="load-models" class="quiet small standalone-action" type="button">Load models</button>
 
-          <label for="model">Available model</label>
+          <label for="model">Model</label>
           <select id="model" name="model" disabled>
             <option value="">Load models from OpenAI first</option>
           </select>
-          <p id="model-status" class="help">Choose a model returned for this API key, then confirm the settings.</p>
+          <p id="model-status" class="help">Load the models available to this API key, then choose one.</p>
 
-          <div class="button-row">
-            <button id="save-settings" class="primary small" type="submit" disabled>Confirm settings</button>
-            <button id="clear-key" class="quiet small" type="button">Clear key</button>
-            <button id="clear-cache" class="quiet small" type="button">Clear saved analyses</button>
+          <div class="connection-actions">
+            <button id="save-settings" class="primary small" type="submit" disabled>Save and continue</button>
+            <button id="change-model" class="quiet small" type="button" hidden>Change model</button>
           </div>
         </form>
+
+        <section class="data-settings" aria-labelledby="data-settings-title">
+          <p class="eyebrow">Privacy and storage</p>
+          <h3 id="data-settings-title">Data on this device</h3>
+          <p id="saved-report-count" class="data-count">0 saved reports on this device</p>
+          <p class="help">Reports stay in this Chrome profile and are not synchronized. The API key lasts only for this browser session.</p>
+          <div class="destructive-actions">
+            <button id="clear-key" class="danger quiet small" type="button">Delete session API key</button>
+            <button id="clear-cache" class="danger quiet small" type="button">Delete saved reports</button>
+          </div>
+          <details class="technical-details">
+            <summary>Technical details</summary>
+            <p>Analysis schema 0.2.0</p>
+            <p><a href="../../PRIVACY.md" target="_blank" rel="noreferrer">Read the privacy policy</a></p>
+          </details>
+        </section>
       </section>
 
       <section id="workspace" class="panel">
-        <div class="mode-switch" role="group" aria-label="Analysis source">
-          <button class="mode active" data-mode="article" type="button">Full article</button>
-          <button class="mode" data-mode="selection" type="button">Selected text</button>
+        <div class="mode-switch" role="radiogroup" aria-label="Analysis source">
+          <button class="mode active" data-mode="article" type="button" role="radio" aria-checked="true" tabindex="0">Entire article</button>
+          <button class="mode" data-mode="selection" type="button" role="radio" aria-checked="false" tabindex="-1">Selected passage</button>
         </div>
 
         <div id="article-preview" class="article-preview" hidden>
-          <p class="eyebrow">Detected source</p>
+          <p id="preview-eyebrow" class="eyebrow">Detected article</p>
           <h2 id="article-title"></h2>
+          <p id="passage-preview" class="passage-preview" hidden></p>
           <p id="article-meta" class="muted"></p>
         </div>
 
@@ -71,36 +93,56 @@
           <img class="product-mark" src="../../assets/icons/icon-48.png" alt="" aria-hidden="true" />
           <h2 id="empty-title">Inspect this article's reasoning</h2>
           <p id="empty-description">Examine its evidence, causal reasoning, context, and framing—without fact-checking.</p>
+          <button id="check-selection" class="quiet small" type="button" hidden>Check selected text</button>
         </div>
 
-        <p class="data-disclosure">Analyzing sends the extracted article text and metadata to OpenAI. The page address stays local and is used only to restore saved reports. OpenAI API charges may apply.</p>
-        <button id="analyze" class="primary full" type="button">Analyze article</button>
-        <div id="progress" class="progress" role="status" aria-live="polite" hidden>
+        <section id="extraction-warning" class="extraction-warning" aria-labelledby="extraction-warning-title" hidden>
+          <strong id="extraction-warning-title">Partial article detected</strong>
+          <ul id="extraction-limitations"></ul>
+          <button id="use-selection" class="quiet small" type="button">Use selected passage instead</button>
+        </section>
+        <p id="data-disclosure" class="data-disclosure">When you analyze, LedeLens sends the detected article text, title, byline, and publication date to OpenAI. The page address stays on this device. OpenAI API charges may apply.</p>
+        <button id="analyze" class="primary full" type="button" disabled>Connect OpenAI to analyze</button>
+        <p id="progress-announcement" class="visually-hidden" role="status" aria-live="polite"></p>
+        <div id="progress" class="progress" hidden>
           <div class="progress-heading">
             <span class="spinner" aria-hidden="true"></span>
             <div>
-              <strong id="progress-title">Reading the article</strong>
-              <span id="progress-elapsed">0:00</span>
+              <strong id="progress-title">Reading page</strong>
+              <span id="progress-elapsed" aria-hidden="true">0:00</span>
             </div>
           </div>
           <p id="progress-detail">Finding the main article and preserving source links.</p>
           <ol class="progress-steps" aria-label="Analysis progress">
-            <li data-progress-step="extract">Extract source</li>
-            <li data-progress-step="analyze">Analyze structure</li>
-            <li data-progress-step="validate">Validate report</li>
-            <li data-progress-step="render">Render findings</li>
+            <li data-progress-step="extract">Reading page</li>
+            <li data-progress-step="analyze">Analyzing structure</li>
+            <li data-progress-step="validate">Checking report</li>
+            <li data-progress-step="render">Preparing results</li>
           </ol>
           <button id="cancel-analysis" class="quiet small cancel-analysis" type="button">Cancel analysis</button>
         </div>
+        <section id="error-state" class="error-state" role="alert" tabindex="-1" hidden>
+          <p class="eyebrow">Analysis not saved</p>
+          <h2 id="error-title"></h2>
+          <p id="error-description"></p>
+          <button id="error-action" class="primary small" type="button">Try again</button>
+          <details id="error-technical" class="technical-details">
+            <summary>Technical details</summary>
+            <dl id="error-technical-list"></dl>
+          </details>
+        </section>
         <p id="message" class="message" role="status" aria-live="polite"></p>
+        <details id="analysis-technical" class="technical-details" hidden>
+          <summary>Technical details</summary>
+          <dl id="analysis-technical-list"></dl>
+        </details>
       </section>
 
       <section id="results" hidden></section>
     </main>
 
     <footer>
-      <span class="disclaimer">DISCLAIMER: LedeLens looks at how well an article supports its conclusions and separates reporting from interpretation. It does not fact-check the article or judge its political viewpoint.</span>
-      <span>Schema 0.2.0</span>
+      <span class="disclaimer">Internal structure only—not fact-checking.</span>
     </footer>
 
     <script type="module" src="panel.js"></script>

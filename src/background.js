@@ -4,8 +4,11 @@ import {
   removeCachedAnalysis,
   upsertCachedAnalysis,
 } from "./lib/cache.js";
+import { validateModelSelection } from "./lib/settings.js";
 
 const ANALYSIS_CACHE_KEY = "analysisCache";
+const AVAILABLE_MODELS_KEY = "availableAnalysisModels";
+const CONFIRMED_MODEL_KEY = "confirmedAnalysisModel";
 
 function configureActionBehavior() {
   return chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
@@ -23,12 +26,12 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 async function getSettings() {
-  const [{ model = null }, { openaiApiKey }] = await Promise.all([
+  const [{ model = null }, { openaiApiKey, [CONFIRMED_MODEL_KEY]: confirmedModel }] = await Promise.all([
     chrome.storage.local.get("model"),
-    chrome.storage.session.get("openaiApiKey"),
+    chrome.storage.session.get(["openaiApiKey", CONFIRMED_MODEL_KEY]),
   ]);
   return {
-    model: isAnalysisModel(model) ? model : null,
+    model: isAnalysisModel(model) && model === confirmedModel ? model : null,
     hasApiKey: Boolean(openaiApiKey),
   };
 }
@@ -43,21 +46,39 @@ async function resolveApiKey(apiKey) {
 
 async function listModels({ apiKey } = {}) {
   const resolvedKey = await resolveApiKey(apiKey);
+  const models = await fetchAnalysisModels(resolvedKey);
+  await chrome.storage.session.set({
+    openaiApiKey: resolvedKey,
+    [AVAILABLE_MODELS_KEY]: models,
+  });
+  await chrome.storage.session.remove(CONFIRMED_MODEL_KEY);
   return {
-    models: await fetchAnalysisModels(resolvedKey),
+    models,
   };
 }
 
 async function saveSettings({ model, apiKey }) {
   const resolvedKey = await resolveApiKey(apiKey);
-  const models = await fetchAnalysisModels(resolvedKey);
-  if (!models.includes(model)) {
-    throw new Error("Choose a model returned for this OpenAI API key.");
-  }
+  const {
+    openaiApiKey: listedApiKey,
+    [AVAILABLE_MODELS_KEY]: models = [],
+  } = await chrome.storage.session.get({
+    openaiApiKey: null,
+    [AVAILABLE_MODELS_KEY]: [],
+  });
+  validateModelSelection({
+    model,
+    resolvedApiKey: resolvedKey,
+    listedApiKey,
+    availableModels: models,
+  });
 
   await Promise.all([
     chrome.storage.local.set({ model }),
-    chrome.storage.session.set({ openaiApiKey: resolvedKey }),
+    chrome.storage.session.set({
+      openaiApiKey: resolvedKey,
+      [CONFIRMED_MODEL_KEY]: model,
+    }),
   ]);
   return getSettings();
 }
@@ -97,6 +118,13 @@ async function removeCachedAnalysisEntry({ url, fingerprint, savedAt } = {}) {
   return { removed: true };
 }
 
+async function getDataStatus() {
+  const { [ANALYSIS_CACHE_KEY]: entries = [] } = await chrome.storage.local.get({
+    [ANALYSIS_CACHE_KEY]: [],
+  });
+  return { savedReportCount: entries.length };
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "PAGE_ACCESS_GRANTED") return false;
 
@@ -114,11 +142,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         return saveCachedAnalysis(message.payload || {});
       case "REMOVE_CACHED_ANALYSIS":
         return removeCachedAnalysisEntry(message.payload || {});
+      case "GET_DATA_STATUS":
+        return getDataStatus();
       case "CLEAR_ANALYSIS_CACHE":
-        await chrome.storage.local.remove(ANALYSIS_CACHE_KEY);
-        return { cleared: true };
+        {
+          const { savedReportCount } = await getDataStatus();
+          await chrome.storage.local.remove(ANALYSIS_CACHE_KEY);
+          return { cleared: true, deletedCount: savedReportCount };
+        }
       case "CLEAR_API_KEY":
-        await chrome.storage.session.remove("openaiApiKey");
+        await chrome.storage.session.remove([
+          "openaiApiKey",
+          AVAILABLE_MODELS_KEY,
+          CONFIRMED_MODEL_KEY,
+        ]);
         return getSettings();
       default:
         throw new Error("Unknown extension message.");

@@ -11,6 +11,21 @@ import {
   isCurrentAnalysisOperation,
   stopAnalysisOperation,
 } from "../lib/request-lifecycle.js";
+import {
+  cacheDeletionPrompt,
+  getArticlePreview,
+  getConnectionState,
+  getExtractionNotice,
+  getPrivacyDisclosure,
+  getReportProvenance,
+  savedReportCountLabel,
+} from "../lib/ui-state.js";
+import {
+  completedDuration,
+  errorPresentation,
+  progressEventKey,
+  technicalDetailRows,
+} from "../lib/analysis-flow.js";
 
 const state = {
   mode: "article",
@@ -19,6 +34,11 @@ const state = {
   settings: null,
   pageRevision: 0,
   activeAnalysis: null,
+  pageReady: false,
+  needsAccess: false,
+  report: null,
+  result: null,
+  savedReportCount: 0,
 };
 
 const elements = {
@@ -27,26 +47,43 @@ const elements = {
   articleMeta: document.querySelector("#article-meta"),
   articlePreview: document.querySelector("#article-preview"),
   articleTitle: document.querySelector("#article-title"),
+  checkSelection: document.querySelector("#check-selection"),
+  changeModel: document.querySelector("#change-model"),
   clearCache: document.querySelector("#clear-cache"),
   clearKey: document.querySelector("#clear-key"),
   cancelAnalysis: document.querySelector("#cancel-analysis"),
+  dataDisclosure: document.querySelector("#data-disclosure"),
+  errorAction: document.querySelector("#error-action"),
+  errorDescription: document.querySelector("#error-description"),
+  errorState: document.querySelector("#error-state"),
+  errorTechnicalList: document.querySelector("#error-technical-list"),
+  errorTitle: document.querySelector("#error-title"),
   emptyDescription: document.querySelector("#empty-description"),
   emptyState: document.querySelector("#empty-state"),
   emptyTitle: document.querySelector("#empty-title"),
+  extractionLimitations: document.querySelector("#extraction-limitations"),
+  extractionWarning: document.querySelector("#extraction-warning"),
   keyStatus: document.querySelector("#key-status"),
   loadModels: document.querySelector("#load-models"),
   message: document.querySelector("#message"),
   model: document.querySelector("#model"),
   modelStatus: document.querySelector("#model-status"),
+  passagePreview: document.querySelector("#passage-preview"),
+  previewEyebrow: document.querySelector("#preview-eyebrow"),
   progress: document.querySelector("#progress"),
+  progressAnnouncement: document.querySelector("#progress-announcement"),
   progressDetail: document.querySelector("#progress-detail"),
   progressElapsed: document.querySelector("#progress-elapsed"),
   progressTitle: document.querySelector("#progress-title"),
+  analysisTechnical: document.querySelector("#analysis-technical"),
+  analysisTechnicalList: document.querySelector("#analysis-technical-list"),
   results: document.querySelector("#results"),
   saveSettings: document.querySelector("#save-settings"),
+  savedReportCount: document.querySelector("#saved-report-count"),
   settings: document.querySelector("#settings"),
   settingsForm: document.querySelector("#settings-form"),
   settingsToggle: document.querySelector("#settings-toggle"),
+  useSelection: document.querySelector("#use-selection"),
 };
 
 const progressOrder = ["extract", "analyze", "validate", "render"];
@@ -75,6 +112,9 @@ let narrativeTimers = [];
 let progressStartedAt = 0;
 let activeProgressStep = null;
 let refreshTimer;
+let ratingHelpId = 0;
+let settingsReturnFocus = null;
+let currentErrorAction = "retry";
 
 function stopActiveAnalysis(reason = "page_changed", { invalidate = true } = {}) {
   const operation = state.activeAnalysis;
@@ -98,10 +138,69 @@ function sendMessage(message) {
 function setMessage(text = "", isError = false) {
   elements.message.textContent = text;
   elements.message.classList.toggle("error", isError);
+  elements.message.setAttribute("role", isError ? "alert" : "status");
+  elements.message.setAttribute("aria-live", isError ? "assertive" : "polite");
+}
+
+function renderTechnicalDetails(list, context) {
+  const rows = technicalDetailRows(context);
+  list.replaceChildren(...rows.flatMap(([label, value]) => {
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const description = document.createElement("dd");
+    description.textContent = value;
+    return [term, description];
+  }));
+}
+
+function clearErrorState() {
+  elements.errorState.hidden = true;
+  elements.errorState.classList.remove("cancelled");
+}
+
+function showAnalysisError(error) {
+  const presentation = errorPresentation(error);
+  currentErrorAction = presentation.action.type;
+  elements.errorTitle.textContent = presentation.title;
+  elements.errorDescription.textContent = presentation.description;
+  elements.errorAction.textContent = presentation.action.label;
+  elements.errorState.classList.toggle("cancelled", presentation.category === "cancelled");
+  renderTechnicalDetails(elements.errorTechnicalList, {
+    error,
+    model: state.settings?.model,
+  });
+  elements.errorState.hidden = false;
+  elements.errorState.focus();
+}
+
+function showAnalysisDiagnostics({ diagnostics, requestId }) {
+  renderTechnicalDetails(elements.analysisTechnicalList, {
+    diagnostics,
+    requestId,
+    model: state.settings?.model,
+  });
+  elements.analysisTechnical.hidden = false;
 }
 
 function defaultAnalyzeLabel() {
-  return state.mode === "article" ? "Analyze article" : "Analyze selected text";
+  const extractionNotice = getExtractionNotice(state.article, state.mode);
+  if (extractionNotice.visible) return extractionNotice.actionLabel;
+  return state.mode === "article" ? "Analyze article" : "Analyze selected passage";
+}
+
+function updateAnalyzeUi() {
+  const connection = getConnectionState(state.settings || {});
+  const hasVisibleReport = Boolean(state.report);
+  if (state.needsAccess) {
+    elements.analyze.textContent = "Select toolbar icon first";
+  } else if (hasVisibleReport) {
+    elements.analyze.textContent = "Run a new analysis";
+  } else if (!connection.canAnalyze) {
+    elements.analyze.textContent = "Connect OpenAI to analyze";
+  } else {
+    elements.analyze.textContent = defaultAnalyzeLabel();
+  }
+  elements.analyze.disabled = state.needsAccess || !state.pageReady || !connection.canAnalyze;
 }
 
 function setEmptyState(title, description) {
@@ -109,30 +208,71 @@ function setEmptyState(title, description) {
   elements.emptyDescription.textContent = description;
 }
 
+function updateDisclosure() {
+  elements.dataDisclosure.textContent = getPrivacyDisclosure(state.report);
+}
+
+function renderExtractionNotice(article) {
+  const notice = getExtractionNotice(article, state.mode);
+  elements.extractionWarning.hidden = !notice.visible;
+  elements.extractionLimitations.replaceChildren();
+  for (const limitation of notice.limitations) {
+    const item = document.createElement("li");
+    item.textContent = limitation;
+    elements.extractionLimitations.append(item);
+  }
+}
+
+function renderArticlePreview(article) {
+  const preview = getArticlePreview(article, state.mode);
+  elements.previewEyebrow.textContent = preview.eyebrow;
+  elements.articleTitle.textContent = preview.title;
+  elements.articleMeta.textContent = preview.meta;
+  elements.passagePreview.textContent = preview.excerpt;
+  elements.passagePreview.hidden = !preview.excerpt;
+  elements.articlePreview.hidden = false;
+  elements.emptyState.hidden = true;
+  elements.checkSelection.hidden = true;
+  renderExtractionNotice(article);
+}
+
 function resetPageUi({ needsAccess = false } = {}) {
   stopActiveAnalysis("page_changed");
   state.pageRevision += 1;
   state.article = null;
   state.articleFingerprint = null;
+  state.pageReady = false;
+  state.needsAccess = needsAccess;
+  state.report = null;
+  state.result = null;
   clearProgressTimers();
   elements.progress.hidden = true;
   elements.articlePreview.hidden = true;
+  elements.extractionWarning.hidden = true;
   elements.results.hidden = true;
+  elements.analysisTechnical.hidden = true;
+  clearErrorState();
   elements.emptyState.hidden = false;
-  elements.analyze.disabled = needsAccess;
+  elements.checkSelection.hidden = true;
+  updateDisclosure();
   if (needsAccess) {
-    elements.analyze.textContent = "Select toolbar icon first";
     setEmptyState(
       "Allow LedeLens to read this tab",
       "Select the LedeLens icon in Chrome’s toolbar to connect this page. You don’t need to reload the page. If the icon isn’t visible, open Chrome’s Extensions menu and select LedeLens.",
     );
+  } else if (state.mode === "selection") {
+    setEmptyState(
+      "Select a passage on the page",
+      "Highlight the text you want to examine, then return here.",
+    );
+    elements.checkSelection.hidden = false;
   } else {
-    elements.analyze.textContent = defaultAnalyzeLabel();
     setEmptyState(
       "Inspect this article's reasoning",
       "Examine its evidence, causal reasoning, context, and framing—without fact-checking.",
     );
   }
+  updateAnalyzeUi();
 }
 
 function clearProgressTimers() {
@@ -147,21 +287,8 @@ function formatElapsed(milliseconds) {
   return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, "0")}`;
 }
 
-function formatSeconds(milliseconds) {
-  return Number.isFinite(milliseconds) ? `${(milliseconds / 1000).toFixed(1)}s` : "not reported";
-}
-
-function formatDiagnostics(diagnostics) {
-  const reasoningTokens = diagnostics?.usage?.output_tokens_details?.reasoning_tokens;
-  const parts = [
-    `first output ${formatSeconds(diagnostics?.timeToFirstOutputMs)}`,
-    `total ${formatSeconds(diagnostics?.totalMs)}`,
-  ];
-  if (Number.isFinite(reasoningTokens)) parts.push(`${reasoningTokens} reasoning tokens`);
-  return `OpenAI timing: ${parts.join(" · ")}.`;
-}
-
 function setProgress(step, title, detail) {
+  const stageChanged = activeProgressStep !== step;
   activeProgressStep = step;
   const activeIndex = progressOrder.indexOf(step);
   document.querySelectorAll("[data-progress-step]").forEach((element) => {
@@ -171,15 +298,19 @@ function setProgress(step, title, detail) {
   });
   elements.progressTitle.textContent = title;
   elements.progressDetail.textContent = detail;
+  if (stageChanged) elements.progressAnnouncement.textContent = title;
 }
 
 function startProgress() {
   clearProgressTimers();
+  activeProgressStep = null;
   progressStartedAt = Date.now();
   elements.progress.hidden = false;
   elements.progress.classList.remove("failed", "cancelled");
+  elements.analysisTechnical.hidden = true;
+  clearErrorState();
   elements.progressElapsed.textContent = "0:00";
-  setProgress("extract", "Reading the article", "Finding the main article and preserving source links.");
+  setProgress("extract", "Reading page", "Finding article text and preserving links to its paragraphs.");
   progressInterval = setInterval(() => {
     elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
   }, 1000);
@@ -187,10 +318,10 @@ function startProgress() {
 
 function narrateModelWait(paragraphCount) {
   const updates = [
-    [6_000, `OpenAI is working through ${paragraphCount} source paragraphs. This can take a minute.`],
-    [16_000, "Still working—checking evidence, causal reasoning, and missing context."],
-    [32_000, "Still working. Deeper reasoning may take longer; LedeLens has not timed out."],
-    [60_000, "Waiting for OpenAI to finish the structured report. You can keep reading this tab."],
+    [6_000, `OpenAI accepted ${paragraphCount} source paragraphs and is preparing a response.`],
+    [16_000, "The analysis is still in progress."],
+    [32_000, "Longer articles and some models may take more time."],
+    [60_000, "Still waiting for OpenAI to finish the report. You can keep reading this tab."],
   ];
   narrativeTimers = updates.map(([delay, detail]) => setTimeout(() => {
     if (activeProgressStep === "analyze") elements.progressDetail.textContent = detail;
@@ -203,9 +334,10 @@ function completeProgress() {
     element.classList.add("complete");
     element.classList.remove("active");
   });
-  elements.progressTitle.textContent = "Analysis ready";
-  elements.progressDetail.textContent = "The report passed local validation and is ready to review.";
+  elements.progressTitle.textContent = "Results ready";
+  elements.progressDetail.textContent = "The report passed local checks and is ready to review.";
   elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
+  elements.progressAnnouncement.textContent = "Analysis ready";
   setTimeout(() => {
     if (!progressInterval && !elements.progress.classList.contains("failed")) elements.progress.hidden = true;
   }, 1200);
@@ -218,6 +350,7 @@ function failProgress() {
   elements.progressTitle.textContent = "Analysis stopped";
   elements.progressDetail.textContent = "See the error below. Your article page was not changed.";
   elements.progressElapsed.textContent = formatElapsed(Date.now() - progressStartedAt);
+  elements.progressAnnouncement.textContent = "";
 }
 
 function cancelProgress(reason = "user_cancelled") {
@@ -232,15 +365,32 @@ function cancelProgress(reason = "user_cancelled") {
 }
 
 function updateSettingsUi() {
-  if ([...elements.model.options].some((option) => option.value === state.settings.model)) {
-    elements.model.value = state.settings.model;
+  const connection = getConnectionState(state.settings || {});
+  if (state.settings.model && ![...elements.model.options].some((option) => option.value === state.settings.model)) {
+    const confirmedOption = document.createElement("option");
+    confirmedOption.value = state.settings.model;
+    confirmedOption.textContent = state.settings.model;
+    elements.model.replaceChildren(confirmedOption);
+    elements.model.disabled = true;
   }
-  elements.keyStatus.textContent = state.settings.hasApiKey && state.settings.model
-    ? "Model confirmed"
-    : "Not configured";
-  elements.keyStatus.classList.toggle("ready", state.settings.hasApiKey);
+  if (state.settings.model) elements.model.value = state.settings.model;
+  elements.keyStatus.textContent = connection.label;
+  elements.keyStatus.className = `status-pill ${connection.tone}`;
   elements.clearKey.disabled = !state.settings.hasApiKey;
-  elements.settings.hidden = Boolean(state.settings.hasApiKey && state.settings.model);
+  elements.changeModel.hidden = !connection.canAnalyze;
+  if (connection.canAnalyze && elements.model.disabled) {
+    elements.modelStatus.textContent = "This confirmed model is used without contacting OpenAI when the panel opens.";
+  }
+  updateAnalyzeUi();
+}
+
+function updateDataStatus(count) {
+  state.savedReportCount = Number.isInteger(count) && count > 0 ? count : 0;
+  elements.savedReportCount.textContent = savedReportCountLabel(state.savedReportCount);
+  elements.clearCache.disabled = state.savedReportCount === 0;
+  elements.clearCache.textContent = state.savedReportCount
+    ? `Delete ${state.savedReportCount} saved report${state.savedReportCount === 1 ? "" : "s"}`
+    : "Delete saved reports";
 }
 
 function populateModelOptions(models, selectedModel = null) {
@@ -267,7 +417,7 @@ function resetModelOptions() {
   elements.model.replaceChildren(placeholder);
   elements.model.disabled = true;
   elements.saveSettings.disabled = true;
-  elements.modelStatus.textContent = "Choose a model returned for this API key, then confirm the settings.";
+  elements.modelStatus.textContent = "Load the models available to this API key, then choose one.";
 }
 
 async function loadAvailableModels() {
@@ -280,8 +430,14 @@ async function loadAvailableModels() {
       type: "LIST_MODELS",
       payload: { apiKey: elements.apiKey.value },
     });
-    populateModelOptions(models, state.settings?.model);
-    setMessage("Choose a model from the OpenAI list, then confirm settings.");
+    state.settings = {
+      ...state.settings,
+      hasApiKey: true,
+      model: null,
+    };
+    populateModelOptions(models);
+    updateSettingsUi();
+    setMessage("Key added. Choose a model, then select Save and continue.");
   } catch (error) {
     setMessage(error.message, true);
   } finally {
@@ -322,11 +478,9 @@ async function extract(expectedRevision = state.pageRevision) {
 
   state.article = article;
   state.articleFingerprint = fingerprintArticle(article);
-  elements.articleTitle.textContent = article.title;
-  const details = [article.byline, `${article.paragraphs.length} paragraphs`].filter(Boolean);
-  elements.articleMeta.textContent = details.join(" · ");
-  elements.articlePreview.hidden = false;
-  elements.emptyState.hidden = true;
+  renderArticlePreview(article);
+  state.pageReady = true;
+  updateAnalyzeUi();
   return article;
 }
 
@@ -340,9 +494,15 @@ async function loadCachedAnalysis(article, expectedRevision) {
   });
   if (expectedRevision !== state.pageRevision || !cached.hit) return false;
 
-  renderResults(cached.result);
-  elements.analyze.textContent = state.mode === "article" ? "Re-analyze article" : "Re-analyze selected text";
-  setMessage("Loaded the saved analysis for this page.");
+  state.report = {
+    source: "restored",
+    savedAt: cached.savedAt,
+    persisted: true,
+  };
+  renderResults(cached.result, state.report);
+  updateDisclosure();
+  updateAnalyzeUi();
+  setMessage("");
   return true;
 }
 
@@ -360,15 +520,19 @@ async function refreshCurrentPage() {
     if (!article || expectedRevision !== state.pageRevision) return;
     const loaded = await loadCachedAnalysis(article, expectedRevision);
     if (expectedRevision !== state.pageRevision) return;
-    if (!loaded) setMessage("This page is ready to analyze.");
-    elements.analyze.disabled = false;
+    if (!loaded) setMessage(
+      getConnectionState(state.settings || {}).canAnalyze
+        ? "This page is ready to analyze."
+        : "Connect OpenAI in settings before starting a new analysis.",
+    );
+    updateAnalyzeUi();
   } catch (error) {
     if (expectedRevision !== state.pageRevision) return;
     if (/Click the LedeLens toolbar icon|cannot access|missing host permission/i.test(error.message)) {
       showAccessPrompt();
     } else {
       resetPageUi();
-      setMessage(error.message, true);
+      showAnalysisError(error);
     }
   }
 }
@@ -393,7 +557,21 @@ function paragraphLinks(ids) {
     button.className = "paragraph-link";
     button.type = "button";
     button.textContent = id;
-    button.addEventListener("click", () => runContentFunction("highlight", id).catch((error) => setMessage(error.message, true)));
+    const paragraphNumber = id.replace(/^p/, "");
+    button.setAttribute("aria-label", `Highlight source paragraph ${paragraphNumber}`);
+    button.addEventListener("click", async () => {
+      try {
+        const highlighted = await runContentFunction("highlight", id);
+        setMessage(
+          highlighted
+            ? `Highlighted source paragraph ${paragraphNumber}.`
+            : `Source paragraph ${paragraphNumber} is no longer available on the page.`,
+          !highlighted,
+        );
+      } catch (error) {
+        setMessage(`Could not highlight source paragraph ${paragraphNumber}: ${error.message}`, true);
+      }
+    });
     container.append(button);
   }
   return container;
@@ -415,6 +593,39 @@ function section(title, className = "") {
   return container;
 }
 
+function formatSavedAt(savedAt) {
+  if (!Number.isFinite(savedAt)) return "";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(savedAt));
+}
+
+function renderReportProvenance(report) {
+  const provenance = getReportProvenance(report);
+  const container = document.createElement("section");
+  container.className = `report-provenance ${provenance.tone}`;
+  container.setAttribute("aria-live", "polite");
+  const title = document.createElement("strong");
+  title.textContent = provenance.savedAt
+    ? `${provenance.title} · ${formatSavedAt(provenance.savedAt)}`
+    : provenance.title;
+  const description = document.createElement("p");
+  description.textContent = provenance.description;
+  container.append(title, description);
+  return container;
+}
+
+function closeRatingHelp(exceptButton = null, { returnFocus = false } = {}) {
+  document.querySelectorAll(".rating-help-button[aria-expanded='true']").forEach((button) => {
+    if (button === exceptButton) return;
+    button.setAttribute("aria-expanded", "false");
+    const popover = document.querySelector(`#${CSS.escape(button.getAttribute("aria-controls"))}`);
+    if (popover) popover.hidden = true;
+    if (returnFocus) button.focus();
+  });
+}
+
 function ratingHelp(title, ratings, activeValue) {
   const wrapper = document.createElement("span");
   wrapper.className = "rating-help";
@@ -424,13 +635,22 @@ function ratingHelp(title, ratings, activeValue) {
   button.type = "button";
   button.textContent = "?";
   button.setAttribute("aria-label", `Explain ${title.toLowerCase()} ratings`);
+  button.setAttribute("aria-expanded", "false");
 
   const popover = document.createElement("span");
   popover.className = "rating-popover";
-  popover.setAttribute("role", "tooltip");
+  popover.id = `rating-help-${++ratingHelpId}`;
+  popover.hidden = true;
+  popover.setAttribute("role", "region");
+  popover.setAttribute("aria-label", `${title} rating guide`);
+  button.setAttribute("aria-controls", popover.id);
 
   const heading = document.createElement("strong");
   heading.textContent = title;
+  const activeRating = ratings.find((rating) => rating.value === activeValue);
+  const current = document.createElement("span");
+  current.className = "current-rating";
+  current.textContent = `Current rating: ${activeRating?.label || activeValue}.`;
   const list = document.createElement("span");
   list.className = "rating-options";
 
@@ -449,7 +669,22 @@ function ratingHelp(title, ratings, activeValue) {
     list.append(option);
   }
 
-  popover.append(heading, list);
+  button.addEventListener("click", () => {
+    const willOpen = button.getAttribute("aria-expanded") !== "true";
+    closeRatingHelp(button);
+    button.setAttribute("aria-expanded", String(willOpen));
+    popover.hidden = !willOpen;
+  });
+
+  button.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || button.getAttribute("aria-expanded") !== "true") return;
+    event.stopPropagation();
+    button.setAttribute("aria-expanded", "false");
+    popover.hidden = true;
+    button.focus();
+  });
+
+  popover.append(heading, current, list);
   wrapper.append(button, popover);
   return wrapper;
 }
@@ -552,8 +787,12 @@ function renderConclusion(result) {
   return container;
 }
 
-function renderResults(result) {
+function renderResults(result, report) {
+  state.result = result;
+  state.report = report;
+  updateDisclosure();
   elements.results.replaceChildren(
+    renderReportProvenance(report),
     renderAssessment(result),
     renderConclusion(result),
     renderMetrics(result.article_metrics),
@@ -564,11 +803,19 @@ function renderResults(result) {
 
 async function analyze() {
   stopActiveAnalysis("superseded");
+  if (!getConnectionState(state.settings || {}).canAnalyze) {
+    setSettingsOpen(true, { focus: true });
+    setMessage("Complete the OpenAI connection before starting an analysis.", true);
+    return;
+  }
   const analysisRevision = state.pageRevision;
   const operation = createAnalysisOperation(analysisRevision);
   state.activeAnalysis = operation;
   elements.analyze.disabled = true;
   elements.results.hidden = true;
+  state.report = null;
+  state.result = null;
+  updateDisclosure();
   setMessage("");
   startProgress();
   try {
@@ -577,20 +824,22 @@ async function analyze() {
     if (!isCurrentAnalysis(operation)) return;
     setProgress(
       "analyze",
-      "Analyzing article structure",
-      `Prepared ${article.paragraphs.length} source paragraphs and sending them to OpenAI.`,
+      "Analyzing structure",
+      `Sending ${article.paragraphs.length} source paragraphs to OpenAI.`,
     );
     narrateModelWait(article.paragraphs.length);
-    const { result, diagnostics } = await analyzeArticle(article, ({ type, eventType, elapsedMs }) => {
+    let lastProgressEvent = null;
+    const { result, diagnostics, requestId } = await analyzeArticle(article, ({ type, eventType }) => {
       if (!isCurrentAnalysis(operation)) return;
-      if (type === "response_started") {
-        setProgress("analyze", "OpenAI accepted the request", "The live response stream is connected. The model is reasoning and preparing the report.");
-      } else if (type === "first_output") {
-        setProgress("analyze", "Receiving the structured report", `OpenAI began returning the report after ${formatSeconds(elapsedMs)}.`);
-      } else if (type === "stream_event" && eventType === "response.output_text.delta") {
-        setProgress("analyze", "Receiving the structured report", "OpenAI is streaming the analysis back to LedeLens.");
-      } else if (type === "validating") {
-        setProgress("validate", "Validating every reference", "Checking the schema, metrics, issues, and paragraph references.");
+      const eventKey = progressEventKey({ type, eventType });
+      if (!eventKey || eventKey === lastProgressEvent) return;
+      lastProgressEvent = eventKey;
+      if (eventKey === "response_started") {
+        setProgress("analyze", "Analyzing structure", "OpenAI accepted the request and is preparing a response.");
+      } else if (eventKey === "first_output" || eventKey === "output_delta") {
+        setProgress("analyze", "Analyzing structure", "OpenAI has started returning the report.");
+      } else if (eventKey === "validating") {
+        setProgress("validate", "Checking report", "Checking the report format, metrics, issues, and paragraph links.");
       }
     }, { signal: operation.controller.signal });
     if (!isCurrentAnalysis(operation)) return;
@@ -599,6 +848,7 @@ async function analyze() {
       url: article.url,
       fingerprint: fingerprintArticle(article),
     };
+    let savedAt = null;
     try {
       const saved = await sendMessage({
         type: "SAVE_CACHED_ANALYSIS",
@@ -614,50 +864,116 @@ async function analyze() {
         }).catch(() => {});
         return;
       }
+      savedAt = saved.savedAt;
+      const { savedReportCount } = await sendMessage({ type: "GET_DATA_STATUS" });
+      if (!isCurrentAnalysis(operation)) {
+        await sendMessage({
+          type: "REMOVE_CACHED_ANALYSIS",
+          payload: { ...cacheIdentity, savedAt },
+        }).catch(() => {});
+        return;
+      }
+      updateDataStatus(savedReportCount);
     } catch {
       cacheWarning = "Analysis ready, but Chrome could not save it for this page.";
     }
     if (!isCurrentAnalysis(operation)) return;
-    setProgress("render", "Building the report", "Organizing the assessment, metrics, issues, and source links.");
-    renderResults(result);
-    elements.analyze.textContent = state.mode === "article" ? "Re-analyze article" : "Re-analyze selected text";
+    setProgress("render", "Preparing results", "Organizing the assessment, metrics, issues, and source links.");
+    state.report = {
+      source: "fresh",
+      savedAt,
+      persisted: Boolean(savedAt),
+    };
+    renderResults(result, state.report);
+    updateAnalyzeUi();
     completeProgress();
-    setMessage(cacheWarning || formatDiagnostics(diagnostics));
+    setMessage(`${completedDuration(diagnostics)}${cacheWarning ? ` ${cacheWarning}` : ""}`);
+    showAnalysisDiagnostics({ diagnostics, requestId });
   } catch (error) {
     if (state.activeAnalysis !== operation || analysisRevision !== state.pageRevision) return;
     if (error?.category === "cancelled") {
       cancelProgress(error.details?.reason);
-      setMessage(
-        error.details?.reason === "page_changed"
-          ? "Analysis stopped because you changed pages."
-          : "Analysis cancelled. No report was saved.",
-      );
     } else {
       failProgress();
-      setMessage(error.message, true);
     }
-    if (!state.settings?.hasApiKey) elements.settings.hidden = false;
+    setMessage("");
+    showAnalysisError(error);
+    if (!getConnectionState(state.settings || {}).canAnalyze) setSettingsOpen(true);
   } finally {
     if (state.activeAnalysis === operation) {
       state.activeAnalysis = null;
-      elements.analyze.disabled = false;
+      updateAnalyzeUi();
     }
   }
 }
 
-document.querySelectorAll(".mode").forEach((button) => {
-  button.addEventListener("click", () => {
-    const stopped = stopActiveAnalysis("mode_changed");
-    state.mode = button.dataset.mode;
-    document.querySelectorAll(".mode").forEach((candidate) => candidate.classList.toggle("active", candidate === button));
-    refreshCurrentPage().then(() => {
-      if (stopped) setMessage("Analysis stopped because you changed the analysis source.");
-    });
+function setMode(mode, { focus = false } = {}) {
+  if (!["article", "selection"].includes(mode)) return;
+  const stopped = stopActiveAnalysis("mode_changed");
+  state.mode = mode;
+  document.querySelectorAll(".mode").forEach((candidate) => {
+    const selected = candidate.dataset.mode === mode;
+    candidate.classList.toggle("active", selected);
+    candidate.setAttribute("aria-checked", String(selected));
+    candidate.tabIndex = selected ? 0 : -1;
+    if (selected && focus) candidate.focus();
+  });
+  return refreshCurrentPage().then(() => {
+    if (stopped) setMessage("Analysis stopped because you changed the analysis source.");
+  });
+}
+
+function setSettingsOpen(open, { focus = false, returnFocus = false } = {}) {
+  if (open && elements.settings.hidden) settingsReturnFocus = document.activeElement;
+  elements.settings.hidden = !open;
+  elements.settingsToggle.setAttribute("aria-expanded", String(open));
+  elements.settingsToggle.setAttribute("aria-label", open ? "Close settings" : "Open settings");
+  if (open && focus) elements.settings.focus();
+  if (!open && returnFocus) (settingsReturnFocus || elements.settingsToggle).focus();
+}
+
+document.querySelectorAll(".mode").forEach((button, index, buttons) => {
+  button.addEventListener("click", () => setMode(button.dataset.mode));
+  button.addEventListener("keydown", (event) => {
+    const keys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+    const direction = ["ArrowRight", "ArrowDown"].includes(event.key) ? 1 : -1;
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? buttons.length - 1
+        : (index + direction + buttons.length) % buttons.length;
+    setMode(buttons[nextIndex].dataset.mode, { focus: true });
   });
 });
 
+elements.checkSelection.addEventListener("click", refreshCurrentPage);
+elements.useSelection.addEventListener("click", () => setMode("selection", { focus: true }));
+
 elements.settingsToggle.addEventListener("click", () => {
-  elements.settings.hidden = !elements.settings.hidden;
+  setSettingsOpen(elements.settings.hidden, { focus: elements.settings.hidden, returnFocus: !elements.settings.hidden });
+});
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".rating-help")) closeRatingHelp();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  const expandedHelp = document.querySelector(".rating-help-button[aria-expanded='true']");
+  if (expandedHelp) {
+    closeRatingHelp(null, { returnFocus: true });
+  } else if (!elements.settings.hidden) {
+    setSettingsOpen(false, { returnFocus: true });
+  }
+});
+
+window.addEventListener("focus", () => {
+  if (state.mode === "selection" && elements.progress.hidden) {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(refreshCurrentPage, 100);
+  }
 });
 
 elements.settingsForm.addEventListener("submit", async (event) => {
@@ -670,33 +986,53 @@ elements.settingsForm.addEventListener("submit", async (event) => {
     });
     elements.apiKey.value = "";
     updateSettingsUi();
-    setMessage("Settings saved for this browser session.");
+    setSettingsOpen(false, { returnFocus: true });
+    setMessage(`Connected to OpenAI with ${state.settings.model}.`);
   } catch (error) {
     setMessage(error.message, true);
   }
 });
 
 elements.clearKey.addEventListener("click", async () => {
-  state.settings = await sendMessage({ type: "CLEAR_API_KEY" });
-  resetModelOptions();
-  updateSettingsUi();
-  elements.settings.hidden = false;
-  setMessage("Session API key cleared.");
+  if (!confirm("Delete the OpenAI API key from this browser session? You will need to enter it again before running a new analysis.")) return;
+  try {
+    state.settings = await sendMessage({ type: "CLEAR_API_KEY" });
+    resetModelOptions();
+    updateSettingsUi();
+    setSettingsOpen(true);
+    setMessage("Session API key deleted. Saved reports remain on this device.");
+  } catch (error) {
+    setMessage(error.message, true);
+  }
 });
 
 elements.clearCache.addEventListener("click", async () => {
+  if (!state.savedReportCount) {
+    setMessage("There are no saved reports to delete.");
+    return;
+  }
+  if (!confirm(cacheDeletionPrompt(state.savedReportCount))) return;
   elements.clearCache.disabled = true;
   try {
-    await sendMessage({ type: "CLEAR_ANALYSIS_CACHE" });
-    setMessage("Saved analyses cleared from this Chrome profile.");
+    const { deletedCount } = await sendMessage({ type: "CLEAR_ANALYSIS_CACHE" });
+    updateDataStatus(0);
+    if (state.report?.persisted && state.result) {
+      state.report = { ...state.report, persisted: false };
+      renderResults(state.result, state.report);
+    }
+    setMessage(`${deletedCount} saved report${deletedCount === 1 ? "" : "s"} deleted from this Chrome profile.`);
   } catch (error) {
     setMessage(error.message, true);
   } finally {
-    elements.clearCache.disabled = false;
+    elements.clearCache.disabled = state.savedReportCount === 0;
   }
 });
 
 elements.loadModels.addEventListener("click", loadAvailableModels);
+elements.changeModel.addEventListener("click", async () => {
+  elements.loadModels.textContent = "Refresh model list";
+  await loadAvailableModels();
+});
 elements.model.addEventListener("change", () => {
   elements.saveSettings.disabled = !elements.model.value;
 });
@@ -712,6 +1048,22 @@ elements.cancelAnalysis.addEventListener("click", () => {
   cancelProgress("user_cancelled");
   setMessage("Analysis cancelled. No report was saved.");
   stopAnalysisOperation(operation, "user_cancelled");
+});
+elements.errorAction.addEventListener("click", async () => {
+  if (currentErrorAction === "settings") {
+    setSettingsOpen(true);
+    elements.apiKey.focus();
+    return;
+  }
+  if (currentErrorAction === "selection") {
+    await setMode("selection", { focus: true });
+    clearErrorState();
+    setMessage("Select a passage on the page, then choose Analyze selected text.");
+    elements.analyze.focus();
+    return;
+  }
+  clearErrorState();
+  analyze();
 });
 
 chrome.runtime.onMessage.addListener((message) => {
@@ -739,12 +1091,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 
 async function initialize() {
   try {
-    state.settings = await sendMessage({ type: "GET_SETTINGS" });
-    if (state.settings.hasApiKey) {
-      const { models } = await sendMessage({ type: "LIST_MODELS" });
-      populateModelOptions(models, state.settings.model);
-    }
+    const [settings, dataStatus] = await Promise.all([
+      sendMessage({ type: "GET_SETTINGS" }),
+      sendMessage({ type: "GET_DATA_STATUS" }),
+    ]);
+    state.settings = settings;
+    updateDataStatus(dataStatus.savedReportCount);
     updateSettingsUi();
+    setSettingsOpen(!getConnectionState(state.settings || {}).canAnalyze);
   } catch (error) {
     setMessage(error.message, true);
   }

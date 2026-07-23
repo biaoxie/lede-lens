@@ -275,6 +275,25 @@ test("surfaces JSON and non-JSON HTTP errors", async () => {
   await assert.rejects(() => analyzeArticle(article), /HTTP 500.*req_empty_error/);
 });
 
+test("categorizes expected HTTP failures for actionable recovery", async () => {
+  for (const [status, body, category] of [
+    [401, { error: { message: "Incorrect API key." } }, "invalid_key"],
+    [429, { error: { message: "No credits.", code: "insufficient_quota" } }, "billing"],
+    [429, { error: { message: "Rate limited." } }, "rate_limit"],
+  ]) {
+    installFetch(new Response(JSON.stringify(body), {
+      status,
+      headers: { "x-request-id": `req_${category}` },
+    }));
+    await assert.rejects(() => analyzeArticle(article), (error) => {
+      assert.equal(error.category, category);
+      assert.equal(error.details.status, status);
+      assert.equal(error.details.requestId, `req_${category}`);
+      return true;
+    });
+  }
+});
+
 test("surfaces streaming failure, incomplete, and error events", async () => {
   installFetch(streamResponse([
     { type: "response.failed", response: { error: { message: "Model failed." } } },
@@ -305,6 +324,23 @@ test("surfaces streaming failure, incomplete, and error events", async () => {
     { type: "error" },
   ]));
   await assert.rejects(() => analyzeArticle(article), /streaming error.*req_test/i);
+});
+
+test("classifies an interrupted response body as a network failure", async () => {
+  const interrupted = new ReadableStream({
+    start(controller) {
+      controller.error(new TypeError("Connection terminated"));
+    },
+  });
+  installFetch(new Response(interrupted, {
+    status: 200,
+    headers: { "x-request-id": "req_interrupted" },
+  }));
+  await assert.rejects(() => analyzeArticle(article), (error) => {
+    assert.equal(error.category, "network");
+    assert.equal(error.details.requestId, "req_interrupted");
+    return true;
+  });
 });
 
 test("rejects empty and prematurely closed streams", async () => {

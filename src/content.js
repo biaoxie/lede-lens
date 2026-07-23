@@ -176,9 +176,10 @@
 
   function extract(mode = "article") {
     const selectionOnly = mode === "selection";
-    const selection = cleanText(window.getSelection()?.toString());
-    if (selectionOnly && !selection) {
-      throw new Error("Select text on the page before using selection mode.");
+    const pageSelection = window.getSelection();
+    const selection = cleanText(pageSelection?.toString());
+    if (selectionOnly && (!pageSelection || !pageSelection.rangeCount || pageSelection.isCollapsed || !selection)) {
+      throw new Error("No passage is selected. Highlight the text you want to examine, then return here.");
     }
 
     const sources = markSourceBlocks();
@@ -187,7 +188,10 @@
     let metadata = {};
 
     if (selectionOnly) {
-      blocks = collectSelection(window.getSelection().getRangeAt(0));
+      blocks = collectSelection(pageSelection.getRangeAt(0));
+      if (!blocks.length) {
+        throw new Error("The selected text is not accessible on this page. Select visible article text, then check again.");
+      }
       notes.push("Only the user's selected text was analyzed.");
     } else {
       if (typeof globalThis.Readability !== "function") {
@@ -209,7 +213,9 @@
 
     const paragraphs = finalizeParagraphs(blocks, notes);
     if (!paragraphs.length) {
-      throw new Error("No article text was detected. Select the passage you want to analyze and use selection mode.");
+      throw new Error(selectionOnly
+        ? "The selected passage could not be captured. Select visible article text, then check again."
+        : "No article text was detected. Use Selected passage to analyze visible text instead.");
     }
 
     return {
@@ -240,7 +246,8 @@
     const element = document.querySelector(`[${ATTRIBUTE}="${CSS.escape(paragraphId)}"]`);
     if (!element) return false;
 
-    element.scrollIntoView({ behavior: "smooth", block: "center" });
+    const reducedMotion = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    element.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
     const previousOutline = element.style.outline;
     const previousOffset = element.style.outlineOffset;
     element.style.outline = "3px solid #d97706";
