@@ -4,6 +4,7 @@ import {
   removeCachedAnalysis,
   upsertCachedAnalysis,
 } from "./lib/cache.js";
+import { validateModelSelection } from "./lib/settings.js";
 
 const ANALYSIS_CACHE_KEY = "analysisCache";
 const AVAILABLE_MODELS_KEY = "availableAnalysisModels";
@@ -58,12 +59,19 @@ async function listModels({ apiKey } = {}) {
 
 async function saveSettings({ model, apiKey }) {
   const resolvedKey = await resolveApiKey(apiKey);
-  const { [AVAILABLE_MODELS_KEY]: models = [] } = await chrome.storage.session.get({
+  const {
+    openaiApiKey: listedApiKey,
+    [AVAILABLE_MODELS_KEY]: models = [],
+  } = await chrome.storage.session.get({
+    openaiApiKey: null,
     [AVAILABLE_MODELS_KEY]: [],
   });
-  if (!models.includes(model)) {
-    throw new Error("Load the model list, then choose a model returned for this OpenAI API key.");
-  }
+  validateModelSelection({
+    model,
+    resolvedApiKey: resolvedKey,
+    listedApiKey,
+    availableModels: models,
+  });
 
   await Promise.all([
     chrome.storage.local.set({ model }),
