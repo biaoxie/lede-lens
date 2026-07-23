@@ -6,6 +6,7 @@ LedeLens is an open-source Chrome extension that shows whether an article's conc
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 ![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4)
+[Chrome Web Store](https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei)
 
 ![LedeLens analyzing a fictional city-library article beside the source page](docs/assets/lede-lens-hero.webp)
 

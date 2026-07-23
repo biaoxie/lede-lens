@@ -12,7 +12,7 @@ You need:
 
 A ChatGPT subscription does not include OpenAI API usage.
 
-LedeLens is not yet distributed through the Chrome Web Store. This guide loads the source directly into Chrome.
+Install [LedeLens from the Chrome Web Store](https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei), or use this guide to load the source directly into Chrome.
 
 ## 1. Download and prepare LedeLens
 
