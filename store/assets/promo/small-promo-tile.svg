@@ -19,7 +19,7 @@
     <rect x="48" y="48" width="11" height="11" rx="2.5" transform="rotate(45 53.5 53.5)" fill="#fffdf8"/>
   </g>
   <text x="38" y="187" fill="#27231f" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" letter-spacing="-.5">LedeLens</text>
-  <text x="39" y="216" fill="#6e6258" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600">See how the story is built.</text>
+  <text x="39" y="216" fill="#6e6258" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600">Analyze evidence &amp; reasoning.</text>
   <g transform="translate(282 168)">
     <rect width="120" height="68" rx="16" fill="#fff" stroke="#e0cdb8"/>
     <circle cx="24" cy="23" r="7" fill="#53a56f"/>

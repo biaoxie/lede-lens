@@ -1,13 +1,13 @@
 # LedeLens
 
-**Read the reasoning behind the headline.**
+**Read the reasoning behind the article.**
 
-LedeLens is an open-source Chrome extension that shows whether a news article's conclusions follow from the evidence it presents—without fact-checking the article or judging its political viewpoint.
+LedeLens is an open-source Chrome extension that shows whether an article's conclusions follow from the evidence it presents—without fact-checking the article or judging its viewpoint.
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 ![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4)
 
-![LedeLens analyzing a fictional city-library article beside the news page](docs/assets/lede-lens-hero.webp)
+![LedeLens analyzing a fictional city-library article beside the source page](docs/assets/lede-lens-hero.webp)
 
 > **Scope:** LedeLens examines internal support, sourcing, cause and effect, missing context, and the separation of reporting from interpretation. Its findings are reading aids—not verdicts on truth, credibility, fairness, or intent.
 
@@ -71,7 +71,7 @@ Then:
 1. Open `chrome://extensions`.
 2. Enable **Developer mode**.
 3. Select **Load unpacked** and choose the repository folder.
-4. Open a news article and select the LedeLens toolbar icon.
+4. Open an article-like webpage and select the LedeLens toolbar icon.
 5. Enter your OpenAI API key, load the models available to that key, choose one, and confirm.
 6. Select **Analyze article**.
 
@@ -84,7 +84,7 @@ LedeLens is an early proof of concept installed as an unpacked Chrome extension.
 ## How it works
 
 ```text
-News article
+Article or selected passage
   → Mozilla Readability extracts the article locally
   → LedeLens assigns stable paragraph IDs
   → OpenAI returns a structured analysis

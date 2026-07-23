@@ -12,4 +12,4 @@ the extension:
 
 Run `npm run check:store-assets` to validate required files and promotional
 image dimensions. Store screenshots must show the real extension UI and must
-not contain API keys, personal browser information, or real news articles.
+not contain API keys, personal browser information, or real articles.

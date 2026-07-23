@@ -9,6 +9,7 @@ const requiredStoreFiles = [
   "store/assets/promo/small-promo-tile.png",
   "store/assets/promo/marquee-promo.svg",
   "store/assets/promo/marquee-promo.png",
+  "store/assets/screenshots/lede-lens-analysis.png",
 ];
 
 await Promise.all(requiredStoreFiles.map((file) => access(file)));
@@ -29,6 +30,10 @@ assert.deepEqual(
 assert.deepEqual(
   await pngDimensions("store/assets/promo/marquee-promo.png"),
   { width: 1400, height: 560 },
+);
+assert.deepEqual(
+  await pngDimensions("store/assets/screenshots/lede-lens-analysis.png"),
+  { width: 1280, height: 800 },
 );
 
 console.log("Chrome Web Store asset checks passed.");

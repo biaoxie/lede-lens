@@ -38,7 +38,7 @@ When source files change, return to `chrome://extensions`, select LedeLens's rel
 
 ## 3. Connect OpenAI
 
-1. Open a regular news article on an `http://` or `https://` page.
+1. Open a regular article-like webpage on an `http://` or `https://` page.
 2. Select the LedeLens toolbar icon to open the side panel and grant access to the current tab.
 3. Open settings and paste your OpenAI API key.
 4. Select **Load available models**.

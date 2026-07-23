@@ -4,17 +4,19 @@ This document is the canonical copy for the LedeLens Chrome Web Store submission
 
 ## Product details
 
-**Name:** LedeLens
+**Name:** LedeLens – Article Analysis
 
-**Summary:** See how well a news article supports its conclusions and separates reporting from interpretation.
+**Summary:** Analyze articles and passages for evidence, sources, causality, context, and framing—without fact-checking or bias ratings.
 
-**Category:** News & Weather
+**Category:** Tools
 
 **Language:** English
 
 ## Detailed description
 
-LedeLens is a reading companion for people who want a clearer view of how a news article is constructed.
+LedeLens helps you read articles more critically. Open an article-like webpage—or select a passage—and see how well its main takeaway is supported by the evidence, sources, causal reasoning, context, and distinction between reporting and interpretation presented on the page.
+
+Use it with news reports, opinion pieces, explainers, essays, and blog posts. LedeLens gives you a clear overall finding, practical questions to ask, material issues to watch, and paragraph-linked explanations. It analyzes internal support only: it does not fact-check claims, rate publishers, detect political bias, or judge an author's intent.
 
 Open an article, select the LedeLens toolbar icon, and choose **Analyze article**. LedeLens extracts the readable text and asks an OpenAI model selected by you to review five practical questions:
 
@@ -27,6 +29,8 @@ Open an article, select the LedeLens toolbar icon, and choose **Analyze article*
 The report emphasizes a plain-language overall finding, a bounded conclusion, source-linked observations, and up to three material issues to watch. Paragraph references let you return to the relevant part of the page.
 
 LedeLens evaluates structure, not truth. It does not fact-check an article, decide which political viewpoint is correct, or tell you what to believe.
+
+Built as a practical media-literacy and critical-reading aid, LedeLens helps readers ask better questions about evidence, sourcing, causality, context, and interpretation.
 
 ### Bring your own OpenAI API key
 

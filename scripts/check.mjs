@@ -53,7 +53,7 @@ assert.equal(
   "The vendored Readability license must match the upstream dependency.",
 );
 assert.equal(manifest.manifest_version, 3);
-assert.equal(manifest.name, "LedeLens");
+assert.equal(manifest.name, "LedeLens – Article Analysis");
 assert.equal(manifest.version, packageMetadata.version, "Manifest and package versions must match.");
 assert.deepEqual(manifest.host_permissions, ["https://api.openai.com/*"]);
 assert.ok(manifest.permissions.includes("storage"));

@@ -19,7 +19,7 @@
     <rect x="43" y="66" width="37" height="9" rx="4.5" fill="#fffdf8"/>
     <rect x="52" y="52" width="12" height="12" rx="3" transform="rotate(45 58 58)" fill="#fffdf8"/>
     <text x="0" y="178" fill="#27231f" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="800" letter-spacing="-1.5">LedeLens</text>
-    <text x="0" y="224" fill="#655b52" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="600">See how the story is built.</text>
+    <text x="0" y="224" fill="#655b52" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="600">Analyze evidence, sources, and reasoning.</text>
     <text x="0" y="275" fill="#7d7167" font-family="Arial, Helvetica, sans-serif" font-size="18">Evidence · Sources · Cause and effect · Context · Framing</text>
   </g>
   <g transform="translate(775 64)" filter="url(#card-shadow)">

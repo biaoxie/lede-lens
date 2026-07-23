@@ -1,8 +1,8 @@
 {
   "name": "ledelens",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
-  "description": "A provider-neutral news structure auditor delivered as a Chrome extension.",
+  "description": "A provider-neutral article analysis tool delivered as a Chrome extension.",
   "type": "module",
   "scripts": {
     "check": "node scripts/check.mjs",
