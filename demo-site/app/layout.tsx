@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 
+const siteUrl = "https://ledelens.app";
+
 const sans = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
@@ -14,19 +16,103 @@ const display = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Same facts. Different framing. | LedeLens",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "LedeLens — Article Structure Analysis for Critical Reading",
+    template: "%s | LedeLens",
+  },
   description:
-    "Compare two versions of the same fictional article and see how framing changes what the evidence can support.",
+    "LedeLens is an open-source Chrome extension that analyzes how articles support their conclusions through evidence, sourcing, causality, context, and framing—without fact-checking or political bias ratings.",
+  keywords: [
+    "LedeLens",
+    "article analysis",
+    "article structure analysis",
+    "critical reading",
+    "media literacy",
+    "evidence analysis",
+    "news analysis",
+    "Chrome extension",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+  authors: [{ name: "LedeLens contributors", url: "https://github.com/biaoxie/lede-lens" }],
+  creator: "LedeLens contributors",
+  publisher: "LedeLens",
+  category: "Education",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   openGraph: {
-    title: "Same facts. Different framing.",
-    description: "Compare two versions of the same fictional article with LedeLens.",
+    title: "LedeLens — See how an article supports its conclusions",
+    description:
+      "Analyze evidence, sourcing, cause and effect, context, and framing with the open-source LedeLens Chrome extension.",
+    url: siteUrl,
+    siteName: "LedeLens",
     type: "website",
+    locale: "en_US",
+    images: [
+      {
+        url: "/og-ledelens.png",
+        width: 1728,
+        height: 909,
+        alt: "LedeLens article structure analysis showing evidence, sourcing, cause and effect, context, and framing",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
-    title: "Same facts. Different framing.",
-    description: "Compare two versions of the same fictional article with LedeLens.",
+    card: "summary_large_image",
+    title: "LedeLens — See how an article supports its conclusions",
+    description:
+      "An open-source Chrome extension for analyzing evidence, sourcing, causality, context, and framing.",
+    images: ["/og-ledelens.png"],
   },
+};
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      url: siteUrl,
+      name: "LedeLens",
+      description:
+        "Interactive demo and official website for the LedeLens article structure analysis extension.",
+      inLanguage: "en",
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${siteUrl}/#software`,
+      name: "LedeLens",
+      alternateName: "LedeLens – Article Analysis",
+      url: siteUrl,
+      downloadUrl:
+        "https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei",
+      sameAs: ["https://github.com/biaoxie/lede-lens"],
+      applicationCategory: "EducationalApplication",
+      applicationSubCategory: "Media literacy and critical reading",
+      operatingSystem: "Google Chrome",
+      browserRequirements: "Requires Google Chrome 116 or newer",
+      description:
+        "LedeLens analyzes whether an article's conclusions follow from the evidence, sourcing, causal reasoning, context, and framing presented in the article. It does not fact-check claims or rate political bias.",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+      },
+      isAccessibleForFree: true,
+      license: "https://www.apache.org/licenses/LICENSE-2.0",
+    },
+  ],
 };
 
 export default function RootLayout({
@@ -36,6 +122,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+      </head>
       <body className={`${sans.variable} ${display.variable}`}>
         {children}
       </body>

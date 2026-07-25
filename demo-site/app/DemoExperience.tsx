@@ -406,9 +406,9 @@ export default function DemoExperience() {
       </header>
 
       <section className="demo-intro">
-        <p className="intro-kicker">Structure, not truth.</p>
+        <p className="intro-kicker">LedeLens · Article structure analysis</p>
         <h1>See how an article<br />supports its conclusions.</h1>
-        <p>LedeLens helps readers inspect evidence, sourcing, cause and effect, context, and framing—without fact-checking or political bias ratings.</p>
+        <p>LedeLens is an open-source Chrome extension that helps readers inspect evidence, sourcing, cause and effect, context, and framing—without fact-checking or political bias ratings.</p>
         <button type="button" onClick={openDemo}>Try the interactive demo <span>↓</span></button>
         <div className="intro-proof">
           <span><StatusDot /> Saved demo result · no API key used</span>

@@ -36,8 +36,13 @@ test("server-renders the interactive LedeLens demo", async (t) => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>Same facts\. Different framing\./);
+  assert.match(html, /<title>LedeLens — Article Structure Analysis/);
+  assert.match(html, /rel="canonical" href="https:\/\/ledelens\.app\/"/);
+  assert.match(html, /application\/ld\+json/);
+  assert.match(html, /SoftwareApplication/);
+  assert.match(html, /og-ledelens\.png/);
   assert.match(html, /See how an article/);
+  assert.match(html, /open-source Chrome extension/);
   assert.match(html, /Try the interactive demo/);
   assert.match(html, /Fictional demonstration article/);
   assert.match(html, /Saved demo result · no API key used/);
@@ -121,4 +126,5 @@ test("ships a complete, static analysis fixture and social card", async () => {
     /\.lede-panel\s*\{[^}]*\bz-index:\s*1;/s,
   );
   await access(new URL("../public/og.png", import.meta.url));
+  await access(new URL("../public/og-ledelens.png", import.meta.url));
 });
