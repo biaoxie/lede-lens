@@ -408,7 +408,7 @@ export default function DemoExperience() {
 
       <section className="demo-intro">
         <p className="intro-kicker">Critical-reading Chrome extension</p>
-        <h1>See whether an article&apos;s evidence<br />{" "}supports its conclusions.</h1>
+        <h1>See whether an article&apos;s evidence{"\u00a0"}<br />supports its conclusions.</h1>
         <p>LedeLens is an open-source news article evidence and reasoning analyzer. Inspect sourcing, cause and effect, context, and framing in Chrome—without fact-checking or political bias scores.</p>
         <button type="button" onClick={openDemo}>Try the interactive demo <span>↓</span></button>
         <div className="intro-proof">
