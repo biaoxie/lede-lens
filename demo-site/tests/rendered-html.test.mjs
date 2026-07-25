@@ -41,6 +41,10 @@ test("server-renders the interactive LedeLens demo", async (t) => {
   assert.match(html, /application\/ld\+json/);
   assert.match(html, /SoftwareApplication/);
   assert.match(html, /og-ledelens\.png/);
+  assert.match(
+    html,
+    /name="google-site-verification" content="waYEp3PQsJmQy5xnEGpo-WfuQPom7fXAYXrZW17WxBU"/,
+  );
   assert.match(html, /See how an article/);
   assert.match(html, /open-source Chrome extension/);
   assert.match(html, /Try the interactive demo/);

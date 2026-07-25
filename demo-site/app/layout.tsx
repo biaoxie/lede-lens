@@ -30,6 +30,9 @@ export const metadata: Metadata = {
   creator: "LedeLens contributors",
   publisher: "LedeLens",
   category: "Education",
+  verification: {
+    google: "waYEp3PQsJmQy5xnEGpo-WfuQPom7fXAYXrZW17WxBU",
+  },
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",
