@@ -18,11 +18,11 @@ const display = Cormorant_Garamond({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "LedeLens — Article Structure Analysis for Critical Reading",
+    default: "LedeLens — News Article Evidence & Reasoning Analyzer",
     template: "%s | LedeLens",
   },
   description:
-    "LedeLens is an open-source Chrome extension for examining article evidence, sourcing, causality, context, and framing—without fact-checking.",
+    "LedeLens is an open-source Chrome extension that analyzes evidence, sourcing, causality, context, and framing in news articles—without fact-checking or bias scores.",
   alternates: {
     canonical: "/",
   },
@@ -83,7 +83,7 @@ const structuredData = {
       url: siteUrl,
       name: "LedeLens",
       description:
-        "Interactive demo and official website for the LedeLens article structure analysis extension.",
+        "Interactive demo and official website for the LedeLens news article evidence and reasoning analyzer.",
       inLanguage: "en",
     },
     {
@@ -100,7 +100,7 @@ const structuredData = {
       operatingSystem: "Google Chrome",
       browserRequirements: "Requires Google Chrome 116 or newer",
       description:
-        "LedeLens analyzes whether an article's conclusions follow from the evidence, sourcing, causal reasoning, context, and framing presented in the article. It does not fact-check claims or rate political bias.",
+        "LedeLens analyzes whether a news article's conclusions follow from the evidence, sourcing, causal reasoning, context, and framing presented in the article. It does not fact-check claims or rate political bias.",
       offers: {
         "@type": "Offer",
         price: "0",

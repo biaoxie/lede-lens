@@ -32,6 +32,11 @@ export default function InstallPage() {
         <h2>Requirements</h2>
         <p>Google Chrome 116 or newer and an OpenAI API key are required. API usage may incur charges on your OpenAI account.</p>
       </section>
+
+      <section>
+        <h2>Review before installing</h2>
+        <p>Explore the <a href="/features">article evidence and reasoning analysis features</a> and read <a href="/privacy">how LedeLens handles article text, API keys, and saved reports</a>.</p>
+      </section>
     </InfoPage>
   );
 }

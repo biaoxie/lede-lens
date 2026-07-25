@@ -26,6 +26,11 @@ export default function HowItWorksPage() {
         <h2>What LedeLens does not do</h2>
         <p>It does not fact-check events, rate a publisher’s credibility, identify political bias, or infer that an author intended to manipulate readers. Its findings are prompts for closer reading, not verdicts on truth.</p>
       </section>
+
+      <section>
+        <h2>Try it on your own reading</h2>
+        <p>Start with the guide to <a href="/guides/evaluate-evidence-in-a-news-article">evaluating a news article’s evidence</a>, review <a href="/privacy">how LedeLens handles article text and API keys</a>, then <a href="/install">install the Chrome extension</a>.</p>
+      </section>
     </InfoPage>
   );
 }

@@ -36,7 +36,7 @@ test("server-renders the interactive LedeLens demo", async (t) => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>LedeLens — Article Structure Analysis/);
+  assert.match(html, /<title>LedeLens — News Article Evidence &amp; Reasoning Analyzer/);
   assert.match(html, /rel="canonical" href="https:\/\/ledelens\.app\/"/);
   assert.match(html, /application\/ld\+json/);
   assert.match(html, /SoftwareApplication/);
@@ -80,13 +80,14 @@ test("serves indexable SEO routes and information pages", async (t) => {
   assert.equal(sitemap.status, 200);
   const sitemapXml = await sitemap.text();
   assert.match(sitemapXml, /<loc>https:\/\/ledelens\.app\/<\/loc>/);
-  for (const route of ["/features", "/how-it-works", "/install", "/privacy"]) {
+  for (const route of ["/features", "/how-it-works", "/guides/evaluate-evidence-in-a-news-article", "/install", "/privacy"]) {
     assert.match(sitemapXml, new RegExp(`<loc>https:\\/\\/ledelens\\.app${route}<\\/loc>`));
   }
 
   const expectedPages = [
-    ["/features", /Understand the reasoning behind an article/],
+    ["/features", /Analyze evidence, sourcing, causality, context, and framing/],
     ["/how-it-works", /From article to source-linked analysis/],
+    ["/guides/evaluate-evidence-in-a-news-article", /How to Evaluate Evidence in a News Article/],
     ["/install", /Install LedeLens/],
     ["/privacy", /What LedeLens handles/],
   ];

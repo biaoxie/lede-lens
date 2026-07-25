@@ -389,7 +389,7 @@ export default function DemoExperience() {
       <header className="demo-header">
         <a className="demo-brand" href="#">
           <span className="lens-mark"><i /><i /></span>
-          <span><strong>LedeLens</strong><small>Interactive product demo</small></span>
+          <span><strong>LedeLens</strong><small>News evidence analysis</small></span>
         </a>
         <nav className="demo-actions" aria-label="Project links">
           <a
@@ -407,9 +407,9 @@ export default function DemoExperience() {
       </header>
 
       <section className="demo-intro">
-        <p className="intro-kicker">LedeLens · Article structure analysis</p>
-        <h1>See how an article<br />supports its conclusions.</h1>
-        <p>LedeLens is an open-source Chrome extension that helps readers inspect evidence, sourcing, cause and effect, context, and framing—without fact-checking or political bias ratings.</p>
+        <p className="intro-kicker">Critical-reading Chrome extension</p>
+        <h1>See whether an article&apos;s evidence<br />supports its conclusions.</h1>
+        <p>LedeLens is an open-source news article evidence and reasoning analyzer. Inspect sourcing, cause and effect, context, and framing in Chrome—without fact-checking or political bias scores.</p>
         <button type="button" onClick={openDemo}>Try the interactive demo <span>↓</span></button>
         <div className="intro-proof">
           <span><StatusDot /> Saved demo result · no API key used</span>
@@ -477,6 +477,12 @@ export default function DemoExperience() {
           <article><span>02</span><h3>Analyze its structure</h3><p>Review internal evidence, sourcing, causal reasoning, missing context, and framing.</p></article>
           <article><span>03</span><h3>Return to the source</h3><p>Every important finding links back to the paragraphs that support it.</p></article>
         </div>
+        <div className="context-links">
+          <Link href="/features">Explore the evidence and reasoning analysis features</Link>
+          <Link href="/how-it-works">See how source-linked article analysis works</Link>
+          <Link href="/guides/evaluate-evidence-in-a-news-article">Learn how to evaluate evidence in a news article</Link>
+          <Link href="/install">Install the LedeLens Chrome extension</Link>
+        </div>
       </section>
 
       <footer className="demo-footer">
@@ -484,6 +490,7 @@ export default function DemoExperience() {
         <nav aria-label="Learn more about LedeLens">
           <Link href="/features">Features</Link>
           <Link href="/how-it-works">How it works</Link>
+          <Link href="/guides/evaluate-evidence-in-a-news-article">Reading guide</Link>
           <Link href="/install">Install</Link>
           <Link href="/privacy">Privacy</Link>
           <a href="https://github.com/biaoxie/lede-lens" target="_blank" rel="noreferrer">GitHub ↗</a>

@@ -2,9 +2,9 @@ import InfoPage from "../InfoPage";
 import { createPageMetadata } from "../seo";
 
 export const metadata = createPageMetadata({
-  title: "Article Analysis Features",
+  title: "Article Evidence & Reasoning Analysis Features",
   description:
-    "Explore how LedeLens analyzes article evidence, sourcing, causality, missing context, framing, and uncertainty with paragraph-linked explanations.",
+    "Analyze article evidence, source attribution, causal reasoning, missing context, framing, and uncertainty with paragraph-linked LedeLens explanations.",
   path: "/features",
 });
 
@@ -12,8 +12,8 @@ export default function FeaturesPage() {
   return (
     <InfoPage
       eyebrow="Critical-reading features"
-      title="Understand the reasoning behind an article."
-      introduction="LedeLens examines the support an article provides for its own conclusions. It is designed for news reports, opinion pieces, explainers, essays, and blog posts."
+      title="Analyze evidence, sourcing, causality, context, and framing."
+      introduction="LedeLens evaluates what an article’s own material can support. It does not search the web to verify whether claims are true, and it does not assign political bias or publisher credibility scores."
     >
       <section>
         <h2>Five practical questions</h2>
@@ -34,6 +34,11 @@ export default function FeaturesPage() {
       <section>
         <h2>Trace every important finding</h2>
         <p>Paragraph references connect the analysis back to the article. Select a reference in the side panel to return to the relevant passage instead of accepting an unexplained score.</p>
+      </section>
+
+      <section>
+        <h2>Go from method to practice</h2>
+        <p>See <a href="/how-it-works">how source-linked article analysis works</a>, or follow the practical guide to <a href="/guides/evaluate-evidence-in-a-news-article">evaluating evidence in a news article</a> before trying the interactive demo.</p>
       </section>
     </InfoPage>
   );
