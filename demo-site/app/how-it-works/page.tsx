@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
 import InfoPage from "../InfoPage";
+import { createPageMetadata } from "../seo";
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: "How LedeLens Works",
   description:
     "See how LedeLens extracts readable article text, assigns paragraph IDs, requests structured analysis, validates it locally, and links findings to the source.",
-  alternates: { canonical: "/how-it-works" },
-};
+  path: "/how-it-works",
+});
 
 export default function HowItWorksPage() {
   return (

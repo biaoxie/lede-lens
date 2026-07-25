@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
 import InfoPage from "../InfoPage";
+import { createPageMetadata } from "../seo";
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: "Article Analysis Features",
   description:
     "Explore how LedeLens analyzes article evidence, sourcing, causality, missing context, framing, and uncertainty with paragraph-linked explanations.",
-  alternates: { canonical: "/features" },
-};
+  path: "/features",
+});
 
 export default function FeaturesPage() {
   return (

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import restrainedAnalysis from "./fixtures/library-analysis.json";
 import wasteFramingAnalysis from "./fixtures/library-analysis-waste-framing.json";
@@ -481,10 +482,10 @@ export default function DemoExperience() {
       <footer className="demo-footer">
         <span>© 2026 LedeLens</span>
         <nav aria-label="Learn more about LedeLens">
-          <a href="/features">Features</a>
-          <a href="/how-it-works">How it works</a>
-          <a href="/install">Install</a>
-          <a href="/privacy">Privacy</a>
+          <Link href="/features">Features</Link>
+          <Link href="/how-it-works">How it works</Link>
+          <Link href="/install">Install</Link>
+          <Link href="/privacy">Privacy</Link>
           <a href="https://github.com/biaoxie/lede-lens" target="_blank" rel="noreferrer">GitHub ↗</a>
         </nav>
       </footer>

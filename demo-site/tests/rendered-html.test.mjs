@@ -75,7 +75,8 @@ test("serves indexable SEO routes and information pages", async (t) => {
   const sitemap = await render("/sitemap.xml");
   assert.equal(sitemap.status, 200);
   const sitemapXml = await sitemap.text();
-  for (const route of ["", "/features", "/how-it-works", "/install", "/privacy"]) {
+  assert.match(sitemapXml, /<loc>https:\/\/ledelens\.app\/<\/loc>/);
+  for (const route of ["/features", "/how-it-works", "/install", "/privacy"]) {
     assert.match(sitemapXml, new RegExp(`<loc>https:\\/\\/ledelens\\.app${route}<\\/loc>`));
   }
 
@@ -92,6 +93,7 @@ test("serves indexable SEO routes and information pages", async (t) => {
     const html = await response.text();
     assert.match(html, heading);
     assert.match(html, new RegExp(`rel="canonical" href="https:\\/\\/ledelens\\.app${path}"`));
+    assert.match(html, new RegExp(`property="og:url" content="https:\\/\\/ledelens\\.app${path}"`));
   }
 });
 

@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
 import InfoPage from "../InfoPage";
+import { createPageMetadata } from "../seo";
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: "Install the LedeLens Chrome Extension",
   description:
     "Download and install the open-source LedeLens Chrome extension to analyze article evidence, causality, context, sourcing, and framing.",
-  alternates: { canonical: "/install" },
-};
+  path: "/install",
+});
 
 export default function InstallPage() {
   return (

@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
 import InfoPage from "../InfoPage";
+import { createPageMetadata } from "../seo";
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: "Privacy",
   description:
     "Learn how LedeLens handles article text, page addresses, OpenAI API keys, and locally saved analysis reports.",
-  alternates: { canonical: "/privacy" },
-};
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   return (
