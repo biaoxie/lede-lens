@@ -1,12 +1,10 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
-    {
-      url: "https://ledelens.app",
-      lastModified: new Date("2026-07-24"),
-      changeFrequency: "monthly",
-      priority: 1,
-    },
-  ];
+  const routes = ["", "/features", "/how-it-works", "/install", "/privacy"];
+
+  return routes.map((route) => ({
+    url: `https://ledelens.app${route}`,
+    lastModified: new Date("2026-07-24"),
+  }));
 }

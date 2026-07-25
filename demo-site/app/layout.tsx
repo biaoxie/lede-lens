@@ -22,17 +22,7 @@ export const metadata: Metadata = {
     template: "%s | LedeLens",
   },
   description:
-    "LedeLens is an open-source Chrome extension that analyzes how articles support their conclusions through evidence, sourcing, causality, context, and framing—without fact-checking or political bias ratings.",
-  keywords: [
-    "LedeLens",
-    "article analysis",
-    "article structure analysis",
-    "critical reading",
-    "media literacy",
-    "evidence analysis",
-    "news analysis",
-    "Chrome extension",
-  ],
+    "LedeLens is an open-source Chrome extension for examining article evidence, sourcing, causality, context, and framing—without fact-checking.",
   alternates: {
     canonical: "/",
   },
@@ -40,6 +30,10 @@ export const metadata: Metadata = {
   creator: "LedeLens contributors",
   publisher: "LedeLens",
   category: "Education",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
   robots: {
     index: true,
     follow: true,
@@ -62,7 +56,7 @@ export const metadata: Metadata = {
     images: [
       {
         url: "/og-ledelens.png",
-        width: 1728,
+        width: 1731,
         height: 909,
         alt: "LedeLens article structure analysis showing evidence, sourcing, cause and effect, context, and framing",
       },
@@ -96,7 +90,7 @@ const structuredData = {
       alternateName: "LedeLens – Article Analysis",
       url: siteUrl,
       downloadUrl:
-        "https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei",
+        "https://github.com/biaoxie/lede-lens/releases/latest",
       sameAs: ["https://github.com/biaoxie/lede-lens"],
       applicationCategory: "EducationalApplication",
       applicationSubCategory: "Media literacy and critical reading",

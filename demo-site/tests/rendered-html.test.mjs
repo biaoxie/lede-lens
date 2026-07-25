@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
-async function render() {
+async function render(path = "/") {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
 
   return worker.fetch(
-    new Request("http://localhost/", {
+    new Request(`http://localhost${path}`, {
       headers: { accept: "text/html", host: "localhost" },
     }),
     {
@@ -53,7 +53,46 @@ test("server-renders the interactive LedeLens demo", async (t) => {
   assert.match(html, /Open LedeLens/);
   assert.match(html, /City library extends weekend hours/);
   assert.match(html, /Saved LedeLens result/);
+  assert.match(html, /href="\/features"/);
+  assert.match(html, /href="\/how-it-works"/);
+  assert.match(html, /href="\/install"/);
+  assert.match(html, /href="\/privacy"/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Starter Project/);
+});
+
+test("serves indexable SEO routes and information pages", async (t) => {
+  try {
+    await access(new URL("../dist/server/index.js", import.meta.url));
+  } catch {
+    t.skip("Build the demo before running its server-render test.");
+    return;
+  }
+
+  const robots = await render("/robots.txt");
+  assert.equal(robots.status, 200);
+  assert.match(await robots.text(), /Allow: \/\s+Sitemap: https:\/\/ledelens\.app\/sitemap\.xml/);
+
+  const sitemap = await render("/sitemap.xml");
+  assert.equal(sitemap.status, 200);
+  const sitemapXml = await sitemap.text();
+  for (const route of ["", "/features", "/how-it-works", "/install", "/privacy"]) {
+    assert.match(sitemapXml, new RegExp(`<loc>https:\\/\\/ledelens\\.app${route}<\\/loc>`));
+  }
+
+  const expectedPages = [
+    ["/features", /Understand the reasoning behind an article/],
+    ["/how-it-works", /From article to source-linked analysis/],
+    ["/install", /Install LedeLens/],
+    ["/privacy", /What LedeLens handles/],
+  ];
+
+  for (const [path, heading] of expectedPages) {
+    const response = await render(path);
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert.match(html, heading);
+    assert.match(html, new RegExp(`rel="canonical" href="https:\\/\\/ledelens\\.app${path}"`));
+  }
 });
 
 test("ships a complete, static analysis fixture and social card", async () => {
@@ -127,4 +166,5 @@ test("ships a complete, static analysis fixture and social card", async () => {
   );
   await access(new URL("../public/og.png", import.meta.url));
   await access(new URL("../public/og-ledelens.png", import.meta.url));
+  await access(new URL("../public/icon.png", import.meta.url));
 });

@@ -7,6 +7,5 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
     },
     sitemap: "https://ledelens.app/sitemap.xml",
-    host: "https://ledelens.app",
   };
 }

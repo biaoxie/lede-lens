@@ -399,8 +399,8 @@ export default function DemoExperience() {
           >
             View on GitHub <span>↗</span>
           </a>
-          <a className="store-link" href="https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei">
-            Get the extension <span>↗</span>
+          <a className="store-link" href="https://github.com/biaoxie/lede-lens/releases/latest">
+            Download extension <span>↗</span>
           </a>
         </nav>
       </header>
@@ -480,8 +480,13 @@ export default function DemoExperience() {
 
       <footer className="demo-footer">
         <span>© 2026 LedeLens</span>
-        <span>This saved-result demo does not call the OpenAI API or send article text.</span>
-        <a href="https://github.com/biaoxie/lede-lens" target="_blank" rel="noreferrer">GitHub ↗</a>
+        <nav aria-label="Learn more about LedeLens">
+          <a href="/features">Features</a>
+          <a href="/how-it-works">How it works</a>
+          <a href="/install">Install</a>
+          <a href="/privacy">Privacy</a>
+          <a href="https://github.com/biaoxie/lede-lens" target="_blank" rel="noreferrer">GitHub ↗</a>
+        </nav>
       </footer>
     </main>
   );

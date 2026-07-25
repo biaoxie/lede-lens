@@ -1,6 +1,6 @@
 # LedeLens Interactive Demo
 
-A static, saved-result product demonstration for [LedeLens](https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei).
+A static, saved-result product demonstration for [LedeLens](https://ledelens.app), an open-source Chrome extension for article structure analysis and critical reading.
 
 The site renders a fictional article inside a simulated Chrome window. Visitors can open the LedeLens side panel, run a narrated analysis, inspect a schema-valid saved result, follow paragraph references, and replay the workflow. The demo needs no API key. The Chrome extension does: it sends extracted article text and metadata to OpenAI when the user analyzes, and OpenAI charges may apply.
 
