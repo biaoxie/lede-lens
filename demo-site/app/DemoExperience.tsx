@@ -400,8 +400,13 @@ export default function DemoExperience() {
           >
             View on GitHub <span>↗</span>
           </a>
-          <a className="store-link" href="https://github.com/biaoxie/lede-lens/releases/latest">
-            Download extension <span>↗</span>
+          <a
+            className="store-link"
+            href="https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Add to Chrome <span>↗</span>
           </a>
         </nav>
       </header>
@@ -410,7 +415,16 @@ export default function DemoExperience() {
         <p className="intro-kicker">Critical-reading Chrome extension</p>
         <h1>See whether an article&apos;s evidence{"\u00a0"}<br />supports its conclusions.</h1>
         <p>LedeLens is an open-source news article evidence and reasoning analyzer. Inspect sourcing, cause and effect, context, and framing in Chrome—without fact-checking or political bias scores.</p>
-        <button type="button" onClick={openDemo}>Try the interactive demo <span>↓</span></button>
+        <div className="intro-actions">
+          <a
+            href="https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Add to Chrome <span>↗</span>
+          </a>
+          <button type="button" onClick={openDemo}>Try the interactive demo <span>↓</span></button>
+        </div>
         <div className="intro-proof">
           <span><StatusDot /> Saved demo result · no API key used</span>
           <span><StatusDot /> Fictional article</span>
@@ -493,6 +507,7 @@ export default function DemoExperience() {
           <Link href="/guides/evaluate-evidence-in-a-news-article">Reading guide</Link>
           <Link href="/install">Install</Link>
           <Link href="/privacy">Privacy</Link>
+          <a href="https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei" target="_blank" rel="noreferrer">Chrome Web Store ↗</a>
           <a href="https://github.com/biaoxie/lede-lens" target="_blank" rel="noreferrer">GitHub ↗</a>
         </nav>
       </footer>

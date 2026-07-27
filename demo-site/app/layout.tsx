@@ -93,8 +93,11 @@ const structuredData = {
       alternateName: "LedeLens – Article Analysis",
       url: siteUrl,
       downloadUrl:
-        "https://github.com/biaoxie/lede-lens/releases/latest",
-      sameAs: ["https://github.com/biaoxie/lede-lens"],
+        "https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei",
+      sameAs: [
+        "https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei",
+        "https://github.com/biaoxie/lede-lens",
+      ],
       applicationCategory: "EducationalApplication",
       applicationSubCategory: "Media literacy and critical reading",
       operatingSystem: "Google Chrome",

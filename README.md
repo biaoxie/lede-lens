@@ -6,13 +6,13 @@ LedeLens is an open-source Chrome extension that shows whether an article's conc
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 ![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4)
-![Chrome Web Store: Under review](https://img.shields.io/badge/Chrome%20Web%20Store-Under%20review-F9AB00)
+[![Chrome Web Store: Available](https://img.shields.io/badge/Chrome%20Web%20Store-Available-1A73E8)](https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei)
 
 > **Interactive demo: [ledelens.app](https://ledelens.app)** — explore a saved analysis of a fictional article without an API key.
 >
-> **Chrome extension:** Under review in the Chrome Web Store. Until it is approved, follow the [Quick Start](quick-start.md) to install it locally.
+> **Chrome extension:** [Install LedeLens from the Chrome Web Store](https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei), or follow the [Quick Start](quick-start.md) to load it locally.
 >
-> **Easy download:** Get the latest Chrome-ready ZIP from [GitHub Releases](https://github.com/biaoxie/lede-lens/releases/latest). Extract it and follow the included `INSTALL.md`; no Node.js or build step is required.
+> **Manual install:** Get the latest Chrome-ready ZIP from [GitHub Releases](https://github.com/biaoxie/lede-lens/releases/latest). Extract it and follow the included `INSTALL.md`; no Node.js or build step is required.
 
 ![LedeLens analyzing a fictional city-library article beside the source page](docs/assets/lede-lens-hero.webp)
 
@@ -86,7 +86,7 @@ For installation details, selected-text analysis, cached reports, and troublesho
 
 ## Project status
 
-LedeLens is under review in the Chrome Web Store and can currently be installed locally as an unpacked extension. The current provider integration supports OpenAI; the analysis contract itself remains provider-neutral. API usage may incur OpenAI charges, and extraction can be incomplete on paywalled pages, protected browser pages, or sites that render article text inside inaccessible frames.
+LedeLens is publicly available in the [Chrome Web Store](https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei) and can also be installed locally as an unpacked extension. The current provider integration supports OpenAI; the analysis contract itself remains provider-neutral. API usage may incur OpenAI charges, and extraction can be incomplete on paywalled pages, protected browser pages, or sites that render article text inside inaccessible frames.
 
 ## How it works
 

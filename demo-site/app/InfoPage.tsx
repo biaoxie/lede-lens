@@ -41,6 +41,7 @@ export default function InfoPage({
         <p><strong>LedeLens</strong> helps readers inspect reasoning without deciding what to believe.</p>
         <div>
           <Link href="/">Try the interactive demo</Link>
+          <a href="https://chromewebstore.google.com/detail/aedlaaeahdhcklnbojnhhghikdjimkei" target="_blank" rel="noreferrer">Add to Chrome ↗</a>
           <Link href="/guides/evaluate-evidence-in-a-news-article">Read the evidence guide</Link>
           <a href="https://github.com/biaoxie/lede-lens" target="_blank" rel="noreferrer">View source on GitHub ↗</a>
         </div>

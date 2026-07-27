@@ -48,6 +48,11 @@ test("server-renders the interactive LedeLens demo", async (t) => {
   assert.match(html, /See how an article/);
   assert.match(html, /open-source Chrome extension/);
   assert.match(html, /Try the interactive demo/);
+  assert.match(
+    html,
+    /href="https:\/\/chromewebstore\.google\.com\/detail\/aedlaaeahdhcklnbojnhhghikdjimkei"/,
+  );
+  assert.match(html, /Add to Chrome/);
   assert.match(html, /Fictional demonstration article/);
   assert.match(html, /Saved demo result · no API key used/);
   assert.match(html, /Same reported facts\. Different framing\./);
@@ -100,6 +105,11 @@ test("serves indexable SEO routes and information pages", async (t) => {
     assert.match(html, new RegExp(`rel="canonical" href="https:\\/\\/ledelens\\.app${path}"`));
     assert.match(html, new RegExp(`property="og:url" content="https:\\/\\/ledelens\\.app${path}"`));
   }
+
+  const installPage = await render("/install");
+  const installHtml = await installPage.text();
+  assert.match(installHtml, /Get LedeLens from the Chrome Web Store/);
+  assert.doesNotMatch(installHtml, /awaiting Chrome Web Store approval/i);
 });
 
 test("ships a complete, static analysis fixture and social card", async () => {
